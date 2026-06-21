@@ -1,10 +1,17 @@
 # Version
 
-Current version: v0.1.3-dev
+Current version: v0.1.4-dev
 
 Current phase: first playable prototype
 
 Current target: v0.1 First Playable
+
+## v0.1.4-dev
+
+- Compacted the mobile baseline after iPhone review.
+- Reduced default font scale, hero title scale, panel/card padding, stat card padding, gaps, and button height.
+- Added an under-420px breakpoint for smaller iPhone-width screens.
+- Kept desktop density rules from v0.1.3-dev.
 
 ## v0.1.3-dev
 
