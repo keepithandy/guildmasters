@@ -1,10 +1,18 @@
 # Version
 
-Current version: v0.1.0-dev
+Current version: v0.1.1-dev
 
 Current phase: first playable prototype
 
 Current target: v0.1 First Playable
+
+## v0.1.1-dev
+
+- Added guild upgrade module.
+- Added Upgrade Guild action to startup wiring.
+- Exposed Upgrade Guild button in the UI.
+- Guild upgrades spend gold, raise guild level, and increase hero capacity.
+- Added manual v0.1.0-dev smoke test plan.
 
 ## v0.1.0-dev
 
