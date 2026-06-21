@@ -1,10 +1,18 @@
 # Version
 
-Current version: v0.1.1-dev
+Current version: v0.1.2-dev
 
 Current phase: first playable prototype
 
 Current target: v0.1 First Playable
+
+## v0.1.2-dev
+
+- Laid in v0.1 CSS rules.
+- Added theme variables for the first visual pass.
+- Improved mobile-first readability for panels, cards, stats, buttons, and log entries.
+- Added responsive two-column layout for wider screens.
+- Preserved the simple low-noise Guildmasters interface direction.
 
 ## v0.1.1-dev
 
