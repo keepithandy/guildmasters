@@ -1,0 +1,48 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #15110d;
+  color: #f4ead8;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  background: #d7a84f;
+  color: #20170d;
+  font-weight: 700;
+  padding: 10px 12px;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+.app-shell {
+  margin: 0 auto;
+  max-width: 900px;
+  padding: 16px;
+}
+
+.panel,
+.card {
+  background: #211b14;
+  border: 1px solid #6f5736;
+  border-radius: 14px;
+  margin: 12px 0;
+  padding: 14px;
+}
+
+.stats-grid,
+.card-list {
+  display: grid;
+  gap: 10px;
+}
+
+.panel-title-row,
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
