@@ -1,4 +1,5 @@
 import { resolveContracts, startContract } from './contracts.js';
+import { upgradeGuild } from './guild.js';
 import { recruitHero } from './heroes.js';
 import { loadGame, resetGame, saveGame } from './saveSystem.js';
 import { render } from './ui.js';
@@ -14,6 +15,10 @@ const actions = {
   },
   startContract(heroId, contractId) {
     state = startContract(state, heroId, contractId);
+    saveAndRender();
+  },
+  upgradeGuild() {
+    state = upgradeGuild(state);
     saveAndRender();
   },
   resetGame() {
