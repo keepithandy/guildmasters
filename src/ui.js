@@ -1,4 +1,5 @@
 import { CONTRACTS, activeContractDetails, calculateSuccessChance } from './contracts.js';
+import { canUpgradeGuild, guildUpgradeCost } from './guild.js';
 import { canRecruitHero, RECRUIT_COST } from './heroes.js';
 
 export function render(state, actions) {
@@ -7,7 +8,10 @@ export function render(state, actions) {
 
   root.innerHTML = `
     <section class="panel">
-      <h2>Guild</h2>
+      <div class="panel-title-row">
+        <h2>Guild</h2>
+        <button id="upgradeGuild" ${canUpgradeGuild(state) ? '' : 'disabled'}>Upgrade Guild (${guildUpgradeCost(state)}g)</button>
+      </div>
       <div class="stats-grid">
         <span>Level <strong>${state.guild.level}</strong></span>
         <span>Gold <strong>${state.guild.gold}</strong></span>
@@ -49,6 +53,7 @@ export function render(state, actions) {
     </section>
   `;
 
+  document.getElementById('upgradeGuild')?.addEventListener('click', actions.upgradeGuild);
   document.getElementById('recruitHero')?.addEventListener('click', actions.recruitHero);
   document.getElementById('resetGame')?.addEventListener('click', actions.resetGame);
 
