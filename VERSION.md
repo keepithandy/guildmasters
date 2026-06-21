@@ -1,10 +1,17 @@
 # Version
 
-Current version: v0.1.2-dev
+Current version: v0.1.3-dev
 
 Current phase: first playable prototype
 
 Current target: v0.1 First Playable
+
+## v0.1.3-dev
+
+- Tightened desktop density for larger resolutions.
+- Reduced large-screen font scale, spacing, padding, border radius, and button height.
+- Added 1100px and 1500px breakpoints for denser desktop layouts.
+- Preserved mobile-first sizing for phone play.
 
 ## v0.1.2-dev
 
