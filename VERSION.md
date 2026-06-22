@@ -1,10 +1,17 @@
 # Version
 
-Current version: v0.1.4-dev
+Current version: v0.1.5-dev
 
 Current phase: first playable prototype
 
 Current target: v0.1 First Playable
+
+## v0.1.5-dev
+
+- Continued compact mobile CSS refinement after iPhone review.
+- Reduced default body scale, header spacing, title size, panel/card padding, stat card size, button height, and vertical gaps.
+- Added tighter panel title behavior so section headers do not create extra vertical space.
+- Preserved the v0.1 low-noise visual direction.
 
 ## v0.1.4-dev
 
