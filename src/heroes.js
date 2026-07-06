@@ -8,6 +8,10 @@ const HERO_CLASSES = [
 
 export const RECRUIT_COST = 50;
 
+export function recruitPowerBonus(state) {
+  return Math.max(0, (state.guild.level - 1) * 2);
+}
+
 export function canRecruitHero(state) {
   return state.heroes.length < state.guild.heroCapacity && state.guild.gold >= RECRUIT_COST;
 }
@@ -19,18 +23,19 @@ export function recruitHero(state) {
   }
 
   const archetype = pick(HERO_CLASSES);
+  const bonus = recruitPowerBonus(state);
   const hero = {
     id: `hero-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: pick(HERO_NAMES),
     className: archetype.name,
     level: 1,
-    power: randomInt(archetype.minPower, archetype.maxPower),
+    power: randomInt(archetype.minPower + bonus, archetype.maxPower + bonus),
     status: 'idle'
   };
 
   state.guild.gold -= RECRUIT_COST;
   state.heroes.push(hero);
-  state.log.unshift(`${hero.name} the ${hero.className} joined the guild.`);
+  state.log.unshift(`${hero.name} the ${hero.className} joined the guild with ${hero.power} power.`);
   return state;
 }
 
