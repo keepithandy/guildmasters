@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 
-import { CONTRACTS, resolveContracts, startContract } from './src/contracts.js';
+import { CONTRACTS, isContractUnlocked, resolveContracts, startContract } from './src/contracts.js';
 import { createNewGameState, repairGameState } from './src/gameState.js';
 import { upgradeGuild } from './src/guild.js';
-import { recruitHero } from './src/heroes.js';
+import { recruitHero, recruitPowerBonus } from './src/heroes.js';
 
 const originalRandom = Math.random;
 
@@ -13,6 +13,9 @@ try {
   let state = createNewGameState(1000);
   assert.equal(state.guild.gold, 100, 'new guild starts with starter gold');
   assert.equal(state.heroes.length, 0, 'new guild starts without heroes');
+  assert.equal(recruitPowerBonus(state), 0, 'level 1 recruits have no guild bonus');
+  assert.equal(isContractUnlocked(state, CONTRACTS[0]), true, 'first contract is unlocked at level 1');
+  assert.equal(isContractUnlocked(state, CONTRACTS[1]), false, 'second contract is locked at level 1');
 
   state = recruitHero(state);
   assert.equal(state.heroes.length, 1, 'recruiting adds one hero');
@@ -35,7 +38,9 @@ try {
   const previousLevel = state.guild.level;
   state = upgradeGuild(state);
   assert.equal(state.guild.level, previousLevel + 1, 'guild upgrade increases level');
-  assert.ok(state.log.some((entry) => entry.includes('Guild upgraded')), 'upgrade creates a log entry');
+  assert.equal(isContractUnlocked(state, CONTRACTS[1]), true, 'level 2 unlocks second contract');
+  assert.equal(recruitPowerBonus(state), 2, 'guild level improves future recruit power');
+  assert.ok(state.log.some((entry) => entry.includes('New contract unlocked')), 'upgrade logs contract unlock milestone');
 
   const repaired = repairGameState(JSON.parse(JSON.stringify(state)));
   assert.equal(repaired.guild.level, state.guild.level, 'repair preserves guild level');
