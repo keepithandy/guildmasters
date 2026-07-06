@@ -1,0 +1,11 @@
+{
+  "name": "guildmasters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lightweight idle guild-management game prototype.",
+  "scripts": {
+    "smoke": "node smoke_guildmasters_v01.mjs",
+    "check": "node smoke_guildmasters_v01.mjs"
+  }
+}
