@@ -15,6 +15,35 @@ Build a guild. Recruit heroes. Send contracts. Collect rewards. Expand the guild
 5. Upgrade the guild.
 6. Unlock better contracts and better recruits.
 
+## Current Playable Status
+
+Guildmasters now includes:
+
+- Recruitable heroes.
+- Contract assignment for idle heroes.
+- Visible success chance.
+- Success and failure rewards.
+- Hero growth after successful contracts.
+- Guild upgrades.
+- Guild-level contract locks and unlock copy.
+- Recruit power bonus from guild level.
+- A readable Guild Log.
+- Browser save/load.
+
+## How To Run Locally
+
+Open `index.html` directly in a browser.
+
+## Smoke Check
+
+Run this from the repo root:
+
+```bash
+npm run smoke
+```
+
+The smoke check covers the first playable loop, contract resolution, guild upgrades, unlock behavior, and log persistence through save repair.
+
 ## Design Pillars
 
 - Simplicity is a feature.
@@ -25,7 +54,7 @@ Build a guild. Recruit heroes. Send contracts. Collect rewards. Expand the guild
 
 ## Initial Scope
 
-The first playable version should include:
+The first playable version includes:
 
 - Guild state
 - Gold
@@ -39,4 +68,4 @@ The first playable version should include:
 
 ## Current Target
 
-v0.1 First Playable.
+v0.2 Progression Spine and Guild Log polish.
