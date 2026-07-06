@@ -1,10 +1,12 @@
-import { CONTRACTS, activeContractDetails, calculateSuccessChance } from './contracts.js';
+import { CONTRACTS, activeContractDetails, calculateSuccessChance, isContractUnlocked, nextContractUnlock } from './contracts.js';
 import { canUpgradeGuild, guildUpgradeCost } from './guild.js';
-import { canRecruitHero, RECRUIT_COST } from './heroes.js';
+import { canRecruitHero, RECRUIT_COST, recruitPowerBonus } from './heroes.js';
 
 export function render(state, actions) {
   const root = document.getElementById('app');
   if (!root) return;
+
+  const nextUnlock = nextContractUnlock(state);
 
   root.innerHTML = `
     <section class="panel">
@@ -18,6 +20,7 @@ export function render(state, actions) {
         <span>Reputation <strong>${state.guild.reputation}</strong></span>
         <span>Heroes <strong>${state.heroes.length}/${state.guild.heroCapacity}</strong></span>
       </div>
+      <p class="helper-text">${nextUnlock ? `Next unlock: ${nextUnlock.name} at guild level ${nextUnlock.minGuildLevel}.` : 'All starter contracts unlocked.'}</p>
     </section>
 
     <section class="panel">
@@ -25,6 +28,7 @@ export function render(state, actions) {
         <h2>Heroes</h2>
         <button id="recruitHero" ${canRecruitHero(state) ? '' : 'disabled'}>Recruit Hero (${RECRUIT_COST}g)</button>
       </div>
+      <p class="helper-text">Recruit quality bonus from guild level: +${recruitPowerBonus(state)} power.</p>
       <div class="card-list">
         ${state.heroes.length ? state.heroes.map(renderHero).join('') : '<p>No heroes recruited yet.</p>'}
       </div>
@@ -75,19 +79,24 @@ function renderHero(hero) {
 }
 
 function renderContract(state, contract) {
-  const idleHeroes = state.heroes.filter(hero => hero.status === 'idle');
+  const unlocked = isContractUnlocked(state, contract);
+  const idleHeroes = unlocked ? state.heroes.filter(hero => hero.status === 'idle') : [];
   const options = idleHeroes.map(hero => {
     const chance = calculateSuccessChance(hero.power, contract.requiredPower);
     return `<button data-start-contract data-hero-id="${hero.id}" data-contract-id="${contract.id}">${hero.name} (${chance}%)</button>`;
   }).join('');
 
+  const actionCopy = unlocked
+    ? options || '<span>No idle heroes available.</span>'
+    : `<span>Locked until guild level ${contract.minGuildLevel}.</span>`;
+
   return `
-    <article class="card">
+    <article class="card ${unlocked ? '' : 'locked-card'}">
       <h3>${contract.name}</h3>
-      <p>${contract.tier} • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
+      <p>${contract.tier} • Level ${contract.minGuildLevel}+ • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
       <p>Success: +${contract.rewardGold}g / +${contract.rewardReputation} rep</p>
       <p>Failure: +${contract.failureGold}g</p>
-      <div class="button-row">${options || '<span>No idle heroes available.</span>'}</div>
+      <div class="button-row">${actionCopy}</div>
     </article>
   `;
 }
