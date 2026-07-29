@@ -1,14 +1,18 @@
 import { CONTRACTS, activeContractDetails, calculateSuccessChance, isContractUnlocked, nextContractUnlock } from './contracts.js';
-import { canUpgradeGuild, guildUpgradeCost } from './guild.js';
-import { canRecruitHero, RECRUIT_COST, recruitPowerBonus } from './heroes.js';
+import { canUpgradeGuild, guildUpgradeBlockedReason, guildUpgradeCost } from './guild.js';
+import { canRecruitHero, RECRUIT_COST, recruitPowerBonus, recruitmentBlockedReason } from './heroes.js';
 
 export function render(state, actions) {
   const root = document.getElementById('app');
   if (!root) return;
 
   const nextUnlock = nextContractUnlock(state);
+  const recruitReason = recruitmentBlockedReason(state);
+  const upgradeReason = guildUpgradeBlockedReason(state);
 
   root.innerHTML = `
+    <p id="guildStatus" class="status-banner" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(state.statusMessage || 'Guild ready.')}</p>
+
     <section class="panel">
       <div class="panel-title-row">
         <h2>Guild</h2>
@@ -21,6 +25,7 @@ export function render(state, actions) {
         <span>Heroes <strong>${state.heroes.length}/${state.guild.heroCapacity}</strong></span>
       </div>
       <p class="helper-text">${nextUnlock ? `Next unlock: ${nextUnlock.name} at guild level ${nextUnlock.minGuildLevel}.` : 'All starter contracts unlocked.'}</p>
+      ${upgradeReason ? `<p class="blocked-copy">${escapeHtml(upgradeReason)}</p>` : ''}
     </section>
 
     <section class="panel">
@@ -29,8 +34,9 @@ export function render(state, actions) {
         <button id="recruitHero" ${canRecruitHero(state) ? '' : 'disabled'}>Recruit Hero (${RECRUIT_COST}g)</button>
       </div>
       <p class="helper-text">Recruit quality bonus from guild level: +${recruitPowerBonus(state)} power.</p>
+      ${recruitReason ? `<p class="blocked-copy">${escapeHtml(recruitReason)}</p>` : ''}
       <div class="card-list">
-        ${state.heroes.length ? state.heroes.map(renderHero).join('') : '<p>No heroes recruited yet.</p>'}
+        ${state.heroes.length ? state.heroes.map(renderHero).join('') : '<p class="empty-copy">No heroes yet. Recruit your first hero when you have an open slot and enough gold.</p>'}
       </div>
     </section>
 
@@ -41,19 +47,20 @@ export function render(state, actions) {
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel active-contracts-panel">
       <h2>Active Contracts</h2>
       <div class="card-list">
-        ${state.activeContracts.length ? state.activeContracts.map(active => renderActiveContract(state, active)).join('') : '<p>No contracts running.</p>'}
+        ${state.activeContracts.length ? state.activeContracts.map(active => renderActiveContract(state, active)).join('') : '<p class="empty-copy">No contracts running. Assign an idle hero from the Contract Board.</p>'}
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel guild-log-panel">
       <div class="panel-title-row">
         <h2>Guild Log</h2>
         <button id="resetGame" class="danger">Reset</button>
       </div>
-      <ul class="log-list">${state.log.slice(0, 8).map(entry => `<li>${entry}</li>`).join('')}</ul>
+      <p class="helper-text">Newest events appear first. The log is durable history; the status banner announces the latest change.</p>
+      <ul class="log-list">${state.log.slice(0, 12).map(renderLogEntry).join('')}</ul>
     </section>
   `;
 
@@ -71,9 +78,9 @@ export function render(state, actions) {
 function renderHero(hero) {
   return `
     <article class="card">
-      <h3>${hero.name}</h3>
-      <p>${hero.className} • Level ${hero.level} • Power ${hero.power}</p>
-      <p>Status: ${hero.status === 'idle' ? 'Idle' : 'On Contract'}</p>
+      <h3>${escapeHtml(hero.name)}</h3>
+      <p>${escapeHtml(hero.className)} • Level ${hero.level} • Power ${hero.power}</p>
+      <p>Status: <strong>${hero.status === 'idle' ? 'Idle' : 'On Contract'}</strong></p>
     </article>
   `;
 }
@@ -83,17 +90,17 @@ function renderContract(state, contract) {
   const idleHeroes = unlocked ? state.heroes.filter(hero => hero.status === 'idle') : [];
   const options = idleHeroes.map(hero => {
     const chance = calculateSuccessChance(hero.power, contract.requiredPower);
-    return `<button data-start-contract data-hero-id="${hero.id}" data-contract-id="${contract.id}">${hero.name} (${chance}%)</button>`;
+    return `<button data-start-contract data-hero-id="${escapeHtml(hero.id)}" data-contract-id="${escapeHtml(contract.id)}">${escapeHtml(hero.name)} (${chance}%)</button>`;
   }).join('');
 
   const actionCopy = unlocked
-    ? options || '<span>No idle heroes available.</span>'
-    : `<span>Locked until guild level ${contract.minGuildLevel}.</span>`;
+    ? options || '<span class="blocked-copy">No idle heroes. Wait for an active contract or recruit another hero.</span>'
+    : `<span class="blocked-copy">Locked until guild level ${contract.minGuildLevel}. Upgrade the guild to unlock it.</span>`;
 
   return `
     <article class="card ${unlocked ? '' : 'locked-card'}">
-      <h3>${contract.name}</h3>
-      <p>${contract.tier} • Level ${contract.minGuildLevel}+ • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
+      <h3>${escapeHtml(contract.name)}</h3>
+      <p>${escapeHtml(contract.tier)} • Level ${contract.minGuildLevel}+ • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
       <p>Success: +${contract.rewardGold}g / +${contract.rewardReputation} rep</p>
       <p>Failure: +${contract.failureGold}g</p>
       <div class="button-row">${actionCopy}</div>
@@ -104,13 +111,26 @@ function renderContract(state, contract) {
 function renderActiveContract(state, active) {
   const { hero, contract } = activeContractDetails(state, active);
   if (!hero || !contract) return '';
-
   const secondsLeft = Math.max(0, Math.ceil((active.completesAt - Date.now()) / 1000));
   return `
-    <article class="card">
-      <h3>${contract.name}</h3>
-      <p>${hero.name} is working.</p>
-      <p>${secondsLeft}s remaining</p>
+    <article class="card active-card">
+      <h3>${escapeHtml(contract.name)}</h3>
+      <p><strong>${escapeHtml(hero.name)}</strong> is working.</p>
+      <p aria-label="${secondsLeft} seconds remaining">${secondsLeft}s remaining</p>
     </article>
   `;
+}
+
+function renderLogEntry(entry) {
+  const message = typeof entry === 'string' ? entry : entry?.message;
+  return `<li>${escapeHtml(message || 'Guild event')}</li>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
