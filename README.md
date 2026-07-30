@@ -31,7 +31,7 @@ Guildmasters now includes:
 - Recruit power bonus from guild level.
 - A readable Guild Log.
 - Browser save/load.
-- Three Common contracts and one Uncommon contract, unlocked by guild level.
+- Three Common contracts unlocked by guild level, plus one Uncommon contract gated by guild level and reputation.
 
 ## Partially Implemented
 
