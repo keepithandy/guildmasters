@@ -1,14 +1,24 @@
 # Version
 
-Current version: v0.1.5-dev
+Current version: v0.2.0
 
-Current phase: playable prototype
+Current phase: reliability baseline
 
-Current target: v0.2 progression, partially implemented
+Current target: continue progression depth without weakening the v0.2 reliability contracts
 
-Package version: `0.1.5-dev`.
+Package version: `0.2.0`.
 
-The save-state schema label remains `v0.1.0-dev`; it is persisted-state metadata and is not the current product version.
+Save-state schema version: `1`. Product metadata stored in current saves is `0.2.0`.
+
+## v0.2.0
+
+- Added versioned save classification and repair with safe future-save rejection.
+- Preserved absolute contract deadlines across reloads and prevented duplicate hero assignments or rewards.
+- Added deterministic resolution fixtures while preserving live formulas and rewards.
+- Bounded the newest-first Guild Log to 50 repaired structured entries.
+- Added polite status announcements, explicit blocked/empty guidance, narrow-layout hardening, and 44px touch targets.
+- Added a read-only progression report and matching GitHub Actions smoke coverage.
+- Preserved the current progression layer: reputation-gated Ogre Toll Road, next-action guidance, ranked assignments, challenging-growth bonuses, milestones, and prototype victory.
 
 ## v0.1.5-dev
 

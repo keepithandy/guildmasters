@@ -1,6 +1,6 @@
 # Guildmasters Test Plan
 
-## v0.1.5-dev Validation
+## v0.2.0 Validation
 
 ### Automated Smoke Testing
 
@@ -8,10 +8,10 @@ Run from the repository root:
 
 ```bash
 npm run smoke
-npm run check
+npm run report:progression
 ```
 
-Both commands run `smoke_guildmasters_v01.mjs`. The suite verifies the initial recruit-to-contract loop, successful contract resolution, guild upgrades and unlocks, recruit power bonuses, ranked assignments, next-action guidance, progression milestones, and save repair. There are no separate lint, type-check, unit-test, or build scripts.
+The smoke suite verifies the recruit-to-contract loop, deterministic success and failure, absolute reload timing, duplicate-assignment and duplicate-reward prevention, versioned save repair, 50-entry log retention, accessibility/mobile contracts, guild upgrades and unlocks, recruit power bonuses, ranked assignments, next-action guidance, progression milestones, and prototype victory. The progression command performs read-only source-data analysis.
 
 For a syntax-only audit of a JavaScript file, run:
 
@@ -65,7 +65,7 @@ http://127.0.0.1:5173
 20. A successful assignment at or below required power grants one bonus power.
 21. Reputation, hero-level, first-failure, and Ogre-clear milestones appear in the Guild Log when applicable.
 
-## Known v0.1.5-dev Limits
+## Known v0.2.0 Limits
 
 - No production build pipeline yet.
 - No dedicated offline-progress summary or recovery UI yet.
