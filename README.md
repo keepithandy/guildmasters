@@ -24,9 +24,47 @@ Guildmasters is a lightweight idle guild-management browser game focused on recr
 - Empty roster, no-idle-hero, locked contract, insufficient-gold, and upgrade-blocked states explain the reason and next existing action.
 - Narrow layouts avoid horizontal overflow, keep active contracts prominent, wrap text safely, and use 44px touch targets.
 
+## Implemented and Playable
+
+Guildmasters now includes:
+
+- Recruitable heroes.
+- Contract assignment for idle heroes.
+- Visible success chance.
+- Success and failure rewards.
+- Hero growth after successful contracts.
+- Guild upgrades.
+- Guild-level contract locks and unlock copy.
+- Recruit power bonus from guild level.
+- A readable Guild Log.
+- Browser save/load.
+- Three Common contracts unlocked by guild level, plus one Uncommon contract gated by guild level and reputation.
+- Next-action guidance in the existing Guild panel.
+- Best-fit hero ordering on contract assignment buttons.
+- Bonus hero growth for successful challenging assignments.
+- Progress milestones and an Ogre Toll Road prototype-victory message in the Guild Log.
+
+## Partially Implemented
+
+- v0.2 progression: hero growth, guild upgrades, guild-level recruit bonuses, guild-level contract gates, and Ogre Toll Road's reputation gate are playable.
+- Offline completion: active contracts are resolved when the game loads, but there is no dedicated offline-progress summary or recovery UI.
+
+## Planned or Unfinished
+
+- Further reputation-based contract progression.
+- Elite and Legendary contract content.
+- A records screen.
+- Fuller offline-progress handling and UI.
+
 ## Run locally
 
-Open `index.html` directly in a browser.
+Serve the repository through a local static server, then open it in a browser:
+
+```bash
+python -m http.server 5173
+```
+
+Open `http://127.0.0.1:5173`.
 
 ## Validation
 

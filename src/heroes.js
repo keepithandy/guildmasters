@@ -57,9 +57,11 @@ export function findHero(state, heroId) {
   return state.heroes.find(hero => hero.id === heroId) || null;
 }
 
-export function levelHero(hero, random = Math.random) {
+export function levelHero(hero, powerBonus = 0, random = Math.random) {
+  const powerGain = randomInt(2, 5, random) + Math.max(0, powerBonus);
   hero.level += 1;
-  hero.power += randomInt(2, 5, random);
+  hero.power += powerGain;
+  return powerGain;
 }
 
 function pick(list, random) {

@@ -1,5 +1,7 @@
 # Initial Contract Catalog
 
+Planning reference: the Common contracts and the Uncommon Ogre Toll Road are currently wired in the playable module. Ogre Toll Road requires guild level 4 and 6 reputation. Elite and Legendary entries below are not yet implemented.
+
 ## Common
 
 Rat Extermination

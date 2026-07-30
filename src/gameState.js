@@ -1,4 +1,4 @@
-export const GAME_VERSION = '0.1.0-dev';
+export const GAME_VERSION = '0.2.0';
 export const SAVE_SCHEMA_VERSION = 1;
 export const MAX_LOG_ENTRIES = 50;
 
@@ -78,6 +78,7 @@ export function appendLog(state, message, timestamp = Date.now()) {
 function repairActiveContracts(value, heroIds, now) {
   if (!Array.isArray(value)) return [];
   const seenHeroes = new Set();
+  const seenIds = new Set();
   const repaired = [];
   for (let index = 0; index < value.length; index += 1) {
     const active = value[index];
@@ -86,14 +87,22 @@ function repairActiveContracts(value, heroIds, now) {
     if (typeof active.contractId !== 'string') continue;
     const startedAt = nonNegativeNumber(active.startedAt, now);
     const completesAt = nonNegativeNumber(active.completesAt, startedAt);
+    const baseId = typeof active.id === 'string' && active.id ? active.id : `active-repaired-${index}`;
+    let id = baseId;
+    let suffix = 1;
+    while (seenIds.has(id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
     repaired.push({
-      id: typeof active.id === 'string' ? active.id : `active-repaired-${index}`,
+      id,
       heroId: active.heroId,
       contractId: active.contractId,
       startedAt,
       completesAt: Math.max(startedAt, completesAt)
     });
     seenHeroes.add(active.heroId);
+    seenIds.add(id);
   }
   return repaired;
 }
@@ -101,14 +110,15 @@ function repairActiveContracts(value, heroIds, now) {
 function repairLog(value, fallback) {
   const source = Array.isArray(value) ? value : fallback;
   return source.map((entry, index) => {
+    const positionTimestamp = source.length - index;
     if (entry && typeof entry === 'object') {
       return {
         id: safeText(entry.id, `log-repaired-${index}`),
-        timestamp: nonNegativeNumber(entry.timestamp, index),
+        timestamp: nonNegativeNumber(entry.timestamp, positionTimestamp),
         message: safeText(entry.message, 'Guild event')
       };
     }
-    return { id: `log-legacy-${index}`, timestamp: index, message: safeText(entry, 'Guild event') };
+    return { id: `log-legacy-${index}`, timestamp: positionTimestamp, message: safeText(entry, 'Guild event') };
   }).filter(entry => entry.message).sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_LOG_ENTRIES);
 }
 

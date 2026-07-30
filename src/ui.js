@@ -1,4 +1,4 @@
-import { CONTRACTS, activeContractDetails, calculateSuccessChance, isContractUnlocked, nextContractUnlock } from './contracts.js';
+import { CONTRACTS, activeContractDetails, calculateSuccessChance, contractUnlockProgress, contractUnlockRequirements, isContractUnlocked, nextContractUnlock } from './contracts.js';
 import { canUpgradeGuild, guildUpgradeBlockedReason, guildUpgradeCost } from './guild.js';
 import { canRecruitHero, RECRUIT_COST, recruitPowerBonus, recruitmentBlockedReason } from './heroes.js';
 
@@ -24,7 +24,8 @@ export function render(state, actions) {
         <span>Reputation <strong>${state.guild.reputation}</strong></span>
         <span>Heroes <strong>${state.heroes.length}/${state.guild.heroCapacity}</strong></span>
       </div>
-      <p class="helper-text">${nextUnlock ? `Next unlock: ${nextUnlock.name} at guild level ${nextUnlock.minGuildLevel}.` : 'All starter contracts unlocked.'}</p>
+      <p class="helper-text">${nextUnlock ? escapeHtml(renderNextUnlock(state, nextUnlock)) : 'All starter contracts unlocked.'}</p>
+      <p class="helper-text">${escapeHtml(nextActionGuidance(state))}</p>
       ${upgradeReason ? `<p class="blocked-copy">${escapeHtml(upgradeReason)}</p>` : ''}
     </section>
 
@@ -87,25 +88,84 @@ function renderHero(hero) {
 
 function renderContract(state, contract) {
   const unlocked = isContractUnlocked(state, contract);
+  const requirements = contractUnlockRequirements(contract);
   const idleHeroes = unlocked ? state.heroes.filter(hero => hero.status === 'idle') : [];
-  const options = idleHeroes.map(hero => {
+  const rankedHeroes = rankHeroesForContract(idleHeroes, contract);
+  const options = rankedHeroes.map((hero, index) => {
     const chance = calculateSuccessChance(hero.power, contract.requiredPower);
-    return `<button data-start-contract data-hero-id="${escapeHtml(hero.id)}" data-contract-id="${escapeHtml(contract.id)}">${escapeHtml(hero.name)} (${chance}%)</button>`;
+    const bestFit = index === 0 && rankedHeroes.length > 1 ? ' • Best fit' : '';
+    return `<button data-start-contract data-hero-id="${escapeHtml(hero.id)}" data-contract-id="${escapeHtml(contract.id)}">${escapeHtml(hero.name)} (${chance}%${bestFit})</button>`;
   }).join('');
 
   const actionCopy = unlocked
     ? options || '<span class="blocked-copy">No idle heroes. Wait for an active contract or recruit another hero.</span>'
-    : `<span class="blocked-copy">Locked until guild level ${contract.minGuildLevel}. Upgrade the guild to unlock it.</span>`;
+    : `<span class="blocked-copy">${escapeHtml(contractUnlockProgress(state, contract))}</span>`;
+
+  const reputationRequirement = requirements.minReputation > 0
+    ? ` • Reputation ${requirements.minReputation}+`
+    : '';
 
   return `
     <article class="card ${unlocked ? '' : 'locked-card'}">
       <h3>${escapeHtml(contract.name)}</h3>
-      <p>${escapeHtml(contract.tier)} • Level ${contract.minGuildLevel}+ • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
+      <p>${escapeHtml(contract.tier)} • Level ${requirements.minGuildLevel}+${reputationRequirement} • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
       <p>Success: +${contract.rewardGold}g / +${contract.rewardReputation} rep</p>
       <p>Failure: +${contract.failureGold}g</p>
       <div class="button-row">${actionCopy}</div>
     </article>
   `;
+}
+
+function renderNextUnlock(state, contract) {
+  const requirements = contractUnlockRequirements(contract);
+
+  if (requirements.minReputation === 0) {
+    return `Next unlock: ${contract.name} at guild level ${requirements.minGuildLevel}.`;
+  }
+
+  return `Next unlock: ${contract.name}. Guild level: ${state.guild.level} / ${requirements.minGuildLevel}. Reputation: ${state.guild.reputation} / ${requirements.minReputation}.`;
+}
+
+export function nextActionGuidance(state) {
+  if (state.heroes.length === 0) {
+    return 'Next action: recruit your first hero.';
+  }
+
+  if (!state.heroes.some(hero => hero.status === 'idle') && state.activeContracts.length > 0) {
+    return 'Next action: wait for an active contract to finish.';
+  }
+
+  const nextUnlock = nextContractUnlock(state);
+  if (nextUnlock) {
+    const requirements = contractUnlockRequirements(nextUnlock);
+    if (state.guild.level >= requirements.minGuildLevel
+      && state.guild.reputation < requirements.minReputation) {
+      const reputationNeeded = requirements.minReputation - state.guild.reputation;
+      return `Next action: earn ${reputationNeeded} reputation to unlock ${nextUnlock.name}.`;
+    }
+
+    if (state.guild.level < requirements.minGuildLevel && canUpgradeGuild(state)) {
+      return `Next action: upgrade the guild to level ${state.guild.level + 1}.`;
+    }
+  }
+
+  if (state.heroes.some(hero => hero.status === 'idle')) {
+    const highestUnlockedContract = [...CONTRACTS].reverse().find(contract => isContractUnlocked(state, contract));
+    return `Next action: assign an idle hero to ${highestUnlockedContract.name}.`;
+  }
+
+  if (canRecruitHero(state)) {
+    return 'Next action: recruit another hero.';
+  }
+
+  return 'Next action: prepare the guild for its next contract.';
+}
+
+export function rankHeroesForContract(heroes, contract) {
+  return [...heroes].sort((left, right) => {
+    return calculateSuccessChance(right.power, contract.requiredPower)
+      - calculateSuccessChance(left.power, contract.requiredPower);
+  });
 }
 
 function renderActiveContract(state, active) {
