@@ -11,7 +11,7 @@ npm run smoke
 npm run check
 ```
 
-Both commands run `smoke_guildmasters_v01.mjs`. The suite verifies the initial recruit-to-contract loop, successful contract resolution, guild upgrades and unlocks, recruit power bonuses, and save repair. There are no separate lint, type-check, unit-test, or build scripts.
+Both commands run `smoke_guildmasters_v01.mjs`. The suite verifies the initial recruit-to-contract loop, successful contract resolution, guild upgrades and unlocks, recruit power bonuses, ranked assignments, next-action guidance, progression milestones, and save repair. There are no separate lint, type-check, unit-test, or build scripts.
 
 For a syntax-only audit of a JavaScript file, run:
 
@@ -60,6 +60,10 @@ http://127.0.0.1:5173
 15. Upgrade Guild button becomes available when enough gold exists.
 16. Upgrade Guild spends gold, increases guild level, and increases hero capacity.
 17. Reset clears progress and starts a fresh guild.
+18. The Guild panel recommends a relevant next action.
+19. Multiple idle heroes are ordered by contract success chance, with the best fit first.
+20. A successful assignment at or below required power grants one bonus power.
+21. Reputation, hero-level, first-failure, and Ogre-clear milestones appear in the Guild Log when applicable.
 
 ## Known v0.1.5-dev Limits
 

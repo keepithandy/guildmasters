@@ -32,6 +32,10 @@ Guildmasters now includes:
 - A readable Guild Log.
 - Browser save/load.
 - Three Common contracts unlocked by guild level, plus one Uncommon contract gated by guild level and reputation.
+- Next-action guidance in the existing Guild panel.
+- Best-fit hero ordering on contract assignment buttons.
+- Bonus hero growth for successful challenging assignments.
+- Progress milestones and an Ogre Toll Road prototype-victory message in the Guild Log.
 
 ## Partially Implemented
 

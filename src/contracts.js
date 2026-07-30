@@ -133,21 +133,29 @@ export function resolveContracts(state, now = Date.now()) {
     const chance = calculateSuccessChance(hero.power, contract.requiredPower);
     const roll = Math.floor(Math.random() * 100) + 1;
     const success = roll <= chance;
+    const challengingAssignment = hero.power <= contract.requiredPower;
 
     hero.status = 'idle';
 
     if (success) {
+      const reputationBefore = state.guild.reputation;
       state.guild.gold += contract.rewardGold;
       state.guild.reputation += contract.rewardReputation;
       state.guild.totalGoldEarned += contract.rewardGold;
       state.guild.contractsCompleted += 1;
-      levelHero(hero);
-      state.log.unshift(`${hero.name} completed ${contract.name}. +${contract.rewardGold} gold, +${contract.rewardReputation} reputation.`);
+      const powerGain = levelHero(hero, challengingAssignment ? 1 : 0);
+      const completionMessage = `${hero.name} completed ${contract.name}. +${contract.rewardGold} gold, +${contract.rewardReputation} reputation, +${powerGain} power${challengingAssignment ? ' (including +1 challenging assignment bonus)' : ''}.`;
+      const milestoneMessages = progressMilestoneMessages(state, hero, contract, reputationBefore);
+      state.log.unshift(completionMessage, ...milestoneMessages);
     } else {
       state.guild.gold += contract.failureGold;
       state.guild.totalGoldEarned += contract.failureGold;
       state.guild.contractsFailed += 1;
-      state.log.unshift(`${hero.name} failed ${contract.name}. +${contract.failureGold} gold recovered.`);
+      const failureMessage = `${hero.name} failed ${contract.name}. +${contract.failureGold} gold recovered.`;
+      const milestoneMessages = state.guild.contractsFailed === 1
+        ? ['Guild milestone: the guild survived its first failed contract.']
+        : [];
+      state.log.unshift(failureMessage, ...milestoneMessages);
     }
   }
 
@@ -160,4 +168,29 @@ export function activeContractDetails(state, active) {
   const hero = findHero(state, active.heroId);
   const contract = CONTRACTS.find(item => item.id === active.contractId);
   return { hero, contract };
+}
+
+function progressMilestoneMessages(state, hero, contract, reputationBefore) {
+  const messages = [];
+
+  for (const candidate of CONTRACTS) {
+    const requirements = contractUnlockRequirements(candidate);
+    if (requirements.minReputation > 0
+      && reputationBefore < requirements.minReputation
+      && state.guild.reputation >= requirements.minReputation) {
+      messages.push(isContractUnlocked(state, candidate)
+        ? `Contract milestone: ${candidate.name} unlocked.`
+        : `Reputation milestone: ${requirements.minReputation} reached for ${candidate.name}.`);
+    }
+  }
+
+  if (hero.level % 5 === 0) {
+    messages.push(`Hero milestone: ${hero.name} reached level ${hero.level}.`);
+  }
+
+  if (contract.id === 'ogre-toll-road') {
+    messages.push('Prototype victory: Ogre Toll Road cleared. The current guild progression path is complete.');
+  }
+
+  return messages;
 }

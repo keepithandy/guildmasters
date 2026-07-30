@@ -38,7 +38,7 @@ export function repairGameState(input, now = Date.now()) {
     },
     heroes: Array.isArray(input.heroes) ? input.heroes.filter(Boolean).map(repairHero) : [],
     activeContracts: Array.isArray(input.activeContracts) ? input.activeContracts.filter(Boolean) : [],
-    log: Array.isArray(input.log) ? input.log.slice(-20).map(String) : fallback.log,
+    log: Array.isArray(input.log) ? input.log.slice(0, 20).map(String) : fallback.log,
     lastSeenAt: nonNegativeNumber(input.lastSeenAt, now)
   };
 }

@@ -17,6 +17,7 @@ The save-state schema label remains `v0.1.0-dev`; it is persisted-state metadata
 - Added tighter panel title behavior so section headers do not create extra vertical space.
 - Preserved the v0.1 low-noise visual direction.
 - The current main branch also includes the playable guild-level progression, contract locks, Guild Log, and automated smoke coverage added after this version bump.
+- Added next-action guidance, ranked hero assignments, challenging-contract growth, progression milestones, and an Ogre Toll Road victory message using the existing interface and state.
 
 ## v0.1.4-dev
 
