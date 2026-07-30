@@ -1,4 +1,4 @@
-import { CONTRACTS, activeContractDetails, calculateSuccessChance, isContractUnlocked, nextContractUnlock } from './contracts.js';
+import { CONTRACTS, activeContractDetails, calculateSuccessChance, contractUnlockProgress, contractUnlockRequirements, isContractUnlocked, nextContractUnlock } from './contracts.js';
 import { canUpgradeGuild, guildUpgradeCost } from './guild.js';
 import { canRecruitHero, RECRUIT_COST, recruitPowerBonus } from './heroes.js';
 
@@ -20,7 +20,7 @@ export function render(state, actions) {
         <span>Reputation <strong>${state.guild.reputation}</strong></span>
         <span>Heroes <strong>${state.heroes.length}/${state.guild.heroCapacity}</strong></span>
       </div>
-      <p class="helper-text">${nextUnlock ? `Next unlock: ${nextUnlock.name} at guild level ${nextUnlock.minGuildLevel}.` : 'All starter contracts unlocked.'}</p>
+      <p class="helper-text">${nextUnlock ? renderNextUnlock(state, nextUnlock) : 'All starter contracts unlocked.'}</p>
     </section>
 
     <section class="panel">
@@ -80,6 +80,7 @@ function renderHero(hero) {
 
 function renderContract(state, contract) {
   const unlocked = isContractUnlocked(state, contract);
+  const requirements = contractUnlockRequirements(contract);
   const idleHeroes = unlocked ? state.heroes.filter(hero => hero.status === 'idle') : [];
   const options = idleHeroes.map(hero => {
     const chance = calculateSuccessChance(hero.power, contract.requiredPower);
@@ -88,17 +89,31 @@ function renderContract(state, contract) {
 
   const actionCopy = unlocked
     ? options || '<span>No idle heroes available.</span>'
-    : `<span>Locked until guild level ${contract.minGuildLevel}.</span>`;
+    : `<span>${contractUnlockProgress(state, contract)}</span>`;
+
+  const reputationRequirement = requirements.minReputation > 0
+    ? ` • Reputation ${requirements.minReputation}+`
+    : '';
 
   return `
     <article class="card ${unlocked ? '' : 'locked-card'}">
       <h3>${contract.name}</h3>
-      <p>${contract.tier} • Level ${contract.minGuildLevel}+ • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
+      <p>${contract.tier} • Level ${requirements.minGuildLevel}+${reputationRequirement} • ${contract.durationSeconds}s • Required Power ${contract.requiredPower}</p>
       <p>Success: +${contract.rewardGold}g / +${contract.rewardReputation} rep</p>
       <p>Failure: +${contract.failureGold}g</p>
       <div class="button-row">${actionCopy}</div>
     </article>
   `;
+}
+
+function renderNextUnlock(state, contract) {
+  const requirements = contractUnlockRequirements(contract);
+
+  if (requirements.minReputation === 0) {
+    return `Next unlock: ${contract.name} at guild level ${requirements.minGuildLevel}.`;
+  }
+
+  return `Next unlock: ${contract.name}. Guild level: ${state.guild.level} / ${requirements.minGuildLevel}. Reputation: ${state.guild.reputation} / ${requirements.minReputation}.`;
 }
 
 function renderActiveContract(state, active) {

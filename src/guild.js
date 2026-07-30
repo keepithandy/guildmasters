@@ -1,4 +1,4 @@
-import { nextContractUnlock } from './contracts.js';
+import { isContractUnlocked, nextContractUnlock } from './contracts.js';
 
 export function guildUpgradeCost(state) {
   return state.guild.level * 150;
@@ -23,7 +23,7 @@ export function upgradeGuild(state) {
   state.guild.heroCapacity += 1;
 
   let upgradeMessage = `Guild upgraded to level ${state.guild.level}. Hero capacity increased.`;
-  if (previousNextUnlock && state.guild.level >= previousNextUnlock.minGuildLevel) {
+  if (previousNextUnlock && isContractUnlocked(state, previousNextUnlock)) {
     upgradeMessage += ` New contract unlocked: ${previousNextUnlock.name}.`;
   }
 

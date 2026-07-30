@@ -2,9 +2,13 @@
 
 Current version: v0.1.5-dev
 
-Current phase: first playable prototype
+Current phase: playable prototype
 
-Current target: v0.1 First Playable
+Current target: v0.2 progression, partially implemented
+
+Package version: `0.1.5-dev`.
+
+The save-state schema label remains `v0.1.0-dev`; it is persisted-state metadata and is not the current product version.
 
 ## v0.1.5-dev
 
@@ -12,6 +16,7 @@ Current target: v0.1 First Playable
 - Reduced default body scale, header spacing, title size, panel/card padding, stat card size, button height, and vertical gaps.
 - Added tighter panel title behavior so section headers do not create extra vertical space.
 - Preserved the v0.1 low-noise visual direction.
+- The current main branch also includes the playable guild-level progression, contract locks, Guild Log, and automated smoke coverage added after this version bump.
 
 ## v0.1.4-dev
 

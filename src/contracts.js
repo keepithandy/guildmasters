@@ -39,6 +39,7 @@ export const CONTRACTS = [
     name: 'Ogre Toll Road',
     tier: 'Uncommon',
     minGuildLevel: 4,
+    minReputation: 6,
     durationSeconds: 240,
     requiredPower: 42,
     rewardGold: 95,
@@ -48,7 +49,36 @@ export const CONTRACTS = [
 ];
 
 export function isContractUnlocked(state, contract) {
-  return state.guild.level >= (contract.minGuildLevel || 1);
+  const requirements = contractUnlockRequirements(contract);
+  return state.guild.level >= requirements.minGuildLevel
+    && state.guild.reputation >= requirements.minReputation;
+}
+
+export function contractUnlockRequirements(contract) {
+  return {
+    minGuildLevel: contract.minGuildLevel || 1,
+    minReputation: contract.minReputation ?? 0
+  };
+}
+
+export function contractUnlockProgress(state, contract) {
+  const requirements = contractUnlockRequirements(contract);
+
+  if (requirements.minReputation === 0) {
+    return `Locked until guild level ${requirements.minGuildLevel}.`;
+  }
+
+  return `Locked. Guild level: ${state.guild.level} / ${requirements.minGuildLevel}. Reputation: ${state.guild.reputation} / ${requirements.minReputation}.`;
+}
+
+export function contractLockMessage(state, contract) {
+  const requirements = contractUnlockRequirements(contract);
+
+  if (requirements.minReputation === 0) {
+    return `${contract.name} is locked until guild level ${requirements.minGuildLevel}.`;
+  }
+
+  return `${contract.name} is locked. Guild level: ${state.guild.level} / ${requirements.minGuildLevel}. Reputation: ${state.guild.reputation} / ${requirements.minReputation}.`;
 }
 
 export function nextContractUnlock(state) {
@@ -70,7 +100,7 @@ export function startContract(state, heroId, contractId, now = Date.now()) {
   }
 
   if (!isContractUnlocked(state, contract)) {
-    state.log.unshift(`${contract.name} is locked until guild level ${contract.minGuildLevel}.`);
+    state.log.unshift(contractLockMessage(state, contract));
     return state;
   }
 

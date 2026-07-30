@@ -2,6 +2,8 @@
 
 Guildmasters is a lightweight idle guild-management game focused on recruiting heroes, sending them on contracts, collecting rewards, and upgrading the guild through simple readable progression.
 
+Current status: **v0.1.5-dev — playable prototype, progressing toward v0.2.**
+
 ## Core Pitch
 
 Build a guild. Recruit heroes. Send contracts. Collect rewards. Expand the guild.
@@ -15,7 +17,7 @@ Build a guild. Recruit heroes. Send contracts. Collect rewards. Expand the guild
 5. Upgrade the guild.
 6. Unlock better contracts and better recruits.
 
-## Current Playable Status
+## Implemented and Playable
 
 Guildmasters now includes:
 
@@ -29,10 +31,29 @@ Guildmasters now includes:
 - Recruit power bonus from guild level.
 - A readable Guild Log.
 - Browser save/load.
+- Three Common contracts and one Uncommon contract, unlocked by guild level.
+
+## Partially Implemented
+
+- v0.2 progression: hero growth, guild upgrades, guild-level recruit bonuses, guild-level contract gates, and Ogre Toll Road's reputation gate are playable.
+- Offline completion: active contracts are resolved when the game loads, but there is no dedicated offline-progress summary or recovery UI.
+
+## Planned or Unfinished
+
+- Further reputation-based contract progression.
+- Elite and Legendary contract content.
+- A records screen.
+- Fuller offline-progress handling and UI.
 
 ## How To Run Locally
 
-Open `index.html` directly in a browser.
+Serve the repository through a local static server, then open it in a browser:
+
+```bash
+python -m http.server 5173
+```
+
+Open `http://127.0.0.1:5173`.
 
 ## Smoke Check
 
@@ -40,9 +61,10 @@ Run this from the repo root:
 
 ```bash
 npm run smoke
+npm run check
 ```
 
-The smoke check covers the first playable loop, contract resolution, guild upgrades, unlock behavior, and log persistence through save repair.
+Both commands run the same automated smoke suite. It covers the first playable loop, successful contract resolution, guild upgrades, unlock behavior, and log persistence through save repair. Browser behavior, failure outcomes, countdown timing, and save persistence still need manual verification.
 
 ## Design Pillars
 
@@ -68,4 +90,4 @@ The first playable version includes:
 
 ## Current Target
 
-v0.2 Progression Spine and Guild Log polish.
+v0.2 progression: complete reputation-based contract progression while preserving the playable guild-level progression already in place.
