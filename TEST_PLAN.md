@@ -1,5 +1,24 @@
 # Guildmasters Test Plan
 
+## v2.0.0-rc.2 Navigation Validation
+
+Run the dedicated quick-navigation audit:
+
+```bash
+npm run smoke:navigation
+```
+
+The audit verifies all 18 permanent quick links, five dropdown groups, stable destination IDs, desktop and mobile open states, keyboard dismissal, inaccessible-when-closed behavior, current-location feedback, and startup wiring.
+
+Manual browser checks:
+
+1. At 1280px or wider, confirm the command index remains visible beside the dashboard.
+2. Press each of the five group titles and confirm its submenu opens and closes.
+3. Select shortcuts from every group and confirm the matching dashboard panel lands near the top of the viewport.
+4. At phone width, confirm Quick Menu opens the drawer and the page behind it is dimmed.
+5. Confirm the drawer closes with the × button, backdrop, Escape key, and any destination link.
+6. Confirm keyboard focus remains inside the open mobile drawer and returns to the Quick Menu button when dismissed.
+
 ## v1.0.0 Validation
 
 ### Roadmap Systems Smoke Testing

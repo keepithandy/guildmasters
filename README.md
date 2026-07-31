@@ -11,7 +11,7 @@ Guildmasters is a browser-based fantasy guild-management strategy game focused o
 5. Collect gold, reputation, and hero growth.
 6. Upgrade the guild and review the durable Guild Log.
 
-## v2.0.0 Release Candidate
+## v2.0.0-rc.2 Release Candidate
 
 The release candidate wires all 22 planned phases into one playable dashboard:
 
@@ -19,6 +19,7 @@ The release candidate wires all 22 planned phases into one playable dashboard:
 - Common, Uncommon, Elite, and Legendary contracts with regions, faction standing, materials, equipment rewards, bosses, and risk tiers.
 - Guildhall rooms, staff, research, crafting, inventory, records, guild identities, game modes, dynamic events, world regions, and faction pledges.
 - Save repair keeps the original v0.2 reliability guarantees while preserving the new systems.
+- A persistent desktop command index and mobile Quick Menu provide press-to-expand shortcuts to all permanent dashboard sections.
 
 This is a functional release candidate, not a claim that every future art, audio, balance, or authored-content decision is final. The dedicated roadmap audit verifies that all 22 phases are represented, callable, save-safe, and connected to the playable loop.
 
@@ -66,6 +67,7 @@ Guildmasters now includes:
 - Campaign chapters, rival guild challenges, tactical drills, and offline return summaries now turn the remaining roadmap hooks into playable actions.
 - Tactical encounters now resolve over multiple rounds with class abilities, temporary combat effects, saved transcripts, hero bonds, and achievement milestones.
 - Boss expeditions now use bespoke phases and mechanics; campaign choices alter faction routes, and rival guilds can build heat and launch rumor pressure.
+- Five titled quick-navigation groups provide direct access to Guild Command, Expeditions, People & Hall, The Realm, and Progress.
 - Active contracts preserve absolute completion timestamps across reloads.
 - Dedicated tactical combat scenes, bespoke art, audio, and a larger authored story campaign remain natural follow-up polish layers on top of the completed data and progression foundation.
 
@@ -89,11 +91,12 @@ npm run smoke:v11
 npm run smoke:v12
 npm run smoke:v13
 npm run smoke:roadmap
+npm run smoke:navigation
 npm run smoke:all
 npm run report:progression
 ```
 
-GitHub Actions runs the same smoke and report commands on pull requests and `main`. The smoke covers save repair, reload timing, double assignment, deterministic success/failure boundaries, partial failure rewards, Guild Log retention, live-region copy, and mobile layout contracts.
+GitHub Actions runs the same smoke and report commands on pull requests and `main`. The smoke covers save repair, reload timing, double assignment, deterministic success/failure boundaries, partial failure rewards, Guild Log retention, live-region copy, mobile layout contracts, and quick-navigation targets.
 
 The progression report prints the current recruit cost and contract table, and flags unreachable, non-positive, or obvious reward/cost discontinuities. It is read-only analysis and does not claim automatic balance correctness.
 
@@ -102,10 +105,12 @@ The progression report prints the current recruit cost and contract table, and f
 - Check 320px, 375px, and 430px widths without horizontal scrolling.
 - Confirm active-contract state and primary actions remain visible.
 - Navigate all buttons by keyboard and verify visible focus.
+- Open and close every quick-menu group, then verify each shortcut lands on its titled section.
+- Confirm the mobile drawer closes by its close button, backdrop, Escape key, and section selection.
 - Confirm the latest concise status is announced once.
 - Confirm durable history remains available in the Guild Log.
 - Verify long hero, contract, and log text wraps safely.
 
 ## Guardrails
 
-This reliability pass does not change contract durations, success formulas, reward amounts, recruit cost, upgrade prices, unlock levels, hero capacity rules, or progression balance. The current target remains a small v0.2 progression spine rather than feature expansion.
+This presentation pass does not change contract durations, success formulas, reward amounts, recruit cost, upgrade prices, unlock levels, hero capacity rules, or progression balance. The current target remains final release-candidate QA and polish before v2.0.0.

@@ -16,7 +16,7 @@ const packageJson = JSON.parse(read('package.json'));
 
 assert.equal(SAVE_SCHEMA_VERSION, 5, 'release candidate uses save schema v5');
 for (let phase = 1; phase <= 22; phase += 1) assert.match(roadmap, new RegExp(`^${phase}\\.`, 'm'), `ROADMAP lists phase ${phase}`);
-assert.match(index, /v2\.0\.0 release candidate/i, 'browser shell presents the release candidate');
+assert.match(index, /v2\.0\.0-rc\.\d+ release candidate/i, 'browser shell presents the release candidate');
 assert.match(sourceUi, /Boss Expeditions/, 'dashboard exposes boss expeditions');
 assert.equal(packageJson.scripts['smoke:roadmap'], 'node smoke_guildmasters_roadmap.mjs', 'package exposes the roadmap audit');
 

@@ -3,6 +3,7 @@ import { upgradeGuild, buyItem, setGuildIdentity, upgradeRoom } from './guild.js
 import { equipItem, recruitHero, trainHero } from './heroes.js';
 import { advanceCampaign, advanceDay, bondHeroes, bootstrapFoundation, challengeBoss, challengeRival, chooseEvent, craftItem, exploreRegion, hireStaff, makeStoryChoice, recordOfflineReturn, researchProject, runTacticalDrill, setMode, supportFaction } from './systems.js';
 import { loadGame, resetGame, saveGame } from './saveSystem.js';
+import { initQuickNavigation } from './navigation.js';
 import { render } from './ui.js';
 import { catalogItem } from './content.js';
 
@@ -52,5 +53,6 @@ function saveAndRender() {
   render(state, actions);
 }
 
-setInterval(saveAndRender, 1000);
 render(state, actions);
+initQuickNavigation();
+setInterval(saveAndRender, 1000);

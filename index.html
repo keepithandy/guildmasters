@@ -3,14 +3,148 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Guildmasters — 22-Phase Release Candidate</title>
+  <title>Guildmasters v2.0.0-rc.2 — 22-Phase Release Candidate</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="mobile.css">
 </head>
 <body>
+  <a class="skip-link" href="#app">Skip to guild dashboard</a>
+
+  <button
+    id="quickNavToggle"
+    class="quick-nav-toggle"
+    type="button"
+    aria-controls="quickNav"
+    aria-expanded="false"
+  >
+    <span class="quick-nav-toggle-icon" aria-hidden="true">☰</span>
+    <span>Quick Menu</span>
+  </button>
+
+  <div
+    id="quickNavBackdrop"
+    class="quick-nav-backdrop"
+    aria-hidden="true"
+  ></div>
+
+  <aside id="quickNav" class="quick-nav" aria-label="Quick access" tabindex="-1">
+    <div class="quick-nav-header">
+      <a class="quick-nav-brand" href="#page-top">
+        <span class="quick-nav-crest" aria-hidden="true">GM</span>
+        <span>
+          <strong>Guildmasters</strong>
+          <small>Command Index</small>
+        </span>
+      </a>
+      <button id="quickNavClose" class="quick-nav-close" type="button" aria-label="Close quick menu">×</button>
+    </div>
+
+    <nav class="quick-nav-groups" aria-label="Guild dashboard sections">
+      <section class="quick-nav-group">
+        <h2>
+          <button
+            class="quick-nav-group-toggle"
+            type="button"
+            aria-expanded="true"
+            aria-controls="quickNavCommand"
+          >
+            <span>Guild Command</span>
+            <span class="quick-nav-chevron" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div id="quickNavCommand" class="quick-nav-submenu">
+          <a class="quick-nav-link" href="#guild-overview">Guild Overview</a>
+          <a class="quick-nav-link" href="#campaign">Campaign</a>
+          <a class="quick-nav-link" href="#guild-events">Guild Events</a>
+          <a class="quick-nav-link" href="#guild-log">Guild Log</a>
+        </div>
+      </section>
+
+      <section class="quick-nav-group">
+        <h2>
+          <button
+            class="quick-nav-group-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="quickNavExpeditions"
+          >
+            <span>Expeditions</span>
+            <span class="quick-nav-chevron" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div id="quickNavExpeditions" class="quick-nav-submenu" hidden>
+          <a class="quick-nav-link" href="#contract-board">Contract Board</a>
+          <a class="quick-nav-link" href="#active-expeditions">Active Expeditions</a>
+          <a class="quick-nav-link" href="#tactical-encounters">Tactical Encounters</a>
+          <a class="quick-nav-link" href="#boss-expeditions">Boss Expeditions</a>
+        </div>
+      </section>
+
+      <section class="quick-nav-group">
+        <h2>
+          <button
+            class="quick-nav-group-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="quickNavGuild"
+          >
+            <span>People &amp; Hall</span>
+            <span class="quick-nav-chevron" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div id="quickNavGuild" class="quick-nav-submenu" hidden>
+          <a class="quick-nav-link" href="#heroes">Heroes</a>
+          <a class="quick-nav-link" href="#relationships">Relationships</a>
+          <a class="quick-nav-link" href="#guildhall">Guildhall</a>
+          <a class="quick-nav-link" href="#armory">Armory &amp; Workshop</a>
+        </div>
+      </section>
+
+      <section class="quick-nav-group">
+        <h2>
+          <button
+            class="quick-nav-group-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="quickNavRealm"
+          >
+            <span>The Realm</span>
+            <span class="quick-nav-chevron" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div id="quickNavRealm" class="quick-nav-submenu" hidden>
+          <a class="quick-nav-link" href="#world-regions">World Regions</a>
+          <a class="quick-nav-link" href="#factions">Faction Standing</a>
+          <a class="quick-nav-link" href="#rival-guilds">Rival Guilds</a>
+        </div>
+      </section>
+
+      <section class="quick-nav-group">
+        <h2>
+          <button
+            class="quick-nav-group-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="quickNavProgress"
+          >
+            <span>Progress</span>
+            <span class="quick-nav-chevron" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div id="quickNavProgress" class="quick-nav-submenu" hidden>
+          <a class="quick-nav-link" href="#achievements">Achievements</a>
+          <a class="quick-nav-link" href="#research-specialists">Research &amp; Specialists</a>
+          <a class="quick-nav-link" href="#guild-records">Guild Records</a>
+        </div>
+      </section>
+    </nav>
+
+    <p class="quick-nav-hint">Choose a title to jump directly to that part of your guild.</p>
+  </aside>
+
   <main class="app-shell">
-    <header>
-      <p>Guildmasters v2.0.0 release candidate • all 22 phases integrated</p>
+    <header id="page-top" tabindex="-1">
+      <p>Guildmasters v2.0.0-rc.2 release candidate • all 22 phases integrated</p>
       <h1>Guildmasters</h1>
       <p>Recruit heroes. Lead expeditions. Shape the fate of the realm.</p>
     </header>

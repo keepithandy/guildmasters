@@ -1,14 +1,21 @@
 # Version
 
-Current version: v2.0.0-rc.1
+Current version: v2.0.0-rc.2
 
-Current phase: 22-phase release candidate verification
+Current phase: 22-phase release candidate presentation and navigation verification
 
 Current target: complete manual browser QA, balance tuning, and final presentation polish before v2.0.0 final
 
-Package version: `2.0.0-rc.1`.
+Package version: `2.0.0-rc.2`.
 
-Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.1`.
+Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.2`.
+
+## v2.0.0-rc.2
+
+- Added a persistent desktop command index with five press-to-expand menu groups.
+- Added a compact mobile Quick Menu drawer with backdrop closing, Escape support, focus containment, and inaccessible-when-closed behavior.
+- Added stable anchors for all 18 permanent dashboard destinations, smooth section jumps, and current-location feedback.
+- Added dedicated quick-navigation smoke coverage and visually verified desktop and phone layouts.
 
 ## v2.0.0-rc.1
 
