@@ -1,6 +1,6 @@
 # Guildmasters
 
-Guildmasters is a lightweight idle guild-management browser game focused on recruiting heroes, assigning contracts, collecting outcomes, and upgrading the guild through a compact readable loop.
+Guildmasters is a browser-based fantasy guild-management strategy game focused on recruiting heroes, assigning contracts, collecting outcomes, and growing a living organization through a readable long-term loop.
 
 ## Core loop
 
@@ -11,7 +11,18 @@ Guildmasters is a lightweight idle guild-management browser game focused on recr
 5. Collect gold, reputation, and hero growth.
 6. Upgrade the guild and review the durable Guild Log.
 
-## v0.2 reliability baseline
+## v1.0 roadmap foundation
+
+The roadmap foundation now wires all 22 planned phases into one playable dashboard:
+
+- Guild and hero progression with classes, skills, traits, morale, injuries, relationships, personal goals, and training.
+- Common, Uncommon, Elite, and Legendary contracts with regions, faction standing, materials, equipment rewards, bosses, and risk tiers.
+- Guildhall rooms, staff, research, crafting, inventory, records, guild identities, game modes, dynamic events, world regions, and faction pledges.
+- Save repair keeps the original v0.2 reliability guarantees while preserving the new systems.
+
+The current build remains intentionally lightweight: expedition resolution is deterministic from the party and contract data, leaving room for a future tactical combat presentation without replacing the progression spine.
+
+## Reliability baseline
 
 - Versioned save schema with current, legacy, future, missing, and malformed classification.
 - Safe repair that preserves valid heroes, contracts, currency, upgrades, and history.
@@ -43,18 +54,15 @@ Guildmasters now includes:
 - Best-fit hero ordering on contract assignment buttons.
 - Bonus hero growth for successful challenging assignments.
 - Progress milestones and an Ogre Toll Road prototype-victory message in the Guild Log.
+- Hero skills, traits, morale, injuries, personal goals, equipment slots, training, and class-fit gear.
+- Nine upgradeable guildhall rooms, six staff roles, six research projects, crafting materials, an Armory, and a Workshop.
+- Ten contracts across Common, Uncommon, Elite, and Legendary tiers, plus five regions, six factions, dynamic events, records, and four game modes.
 
-## Partially Implemented
+## Current scope
 
-- v0.2 progression: hero growth, guild upgrades, guild-level recruit bonuses, guild-level contract gates, and Ogre Toll Road's reputation gate are playable.
-- Offline completion: active contracts are resolved when the game loads, but there is no dedicated offline-progress summary or recovery UI.
-
-## Planned or Unfinished
-
-- Further reputation-based contract progression.
-- Elite and Legendary contract content.
-- A records screen.
-- Fuller offline-progress handling and UI.
+- The full roadmap foundation is playable in the browser.
+- Active contracts preserve absolute completion timestamps across reloads.
+- Dedicated tactical combat scenes, bespoke art, audio, and a larger authored story campaign remain natural follow-up polish layers on top of the completed data and progression foundation.
 
 ## Run locally
 
@@ -71,6 +79,8 @@ Open `http://127.0.0.1:5173`.
 ```powershell
 npm ci
 npm run smoke
+npm run smoke:v10
+npm run smoke:all
 npm run report:progression
 ```
 

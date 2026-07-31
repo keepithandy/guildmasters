@@ -1,5 +1,31 @@
 # Guildmasters Test Plan
 
+## v1.0.0 Validation
+
+### Roadmap Systems Smoke Testing
+
+Run from the repository root:
+
+```bash
+npm run smoke:all
+```
+
+The v1.0 suite covers room upgrades, class skills and traits, expanded contract tiers, legendary loot, region exploration, research, staff hiring, crafting, daily progression, records, and v1.0 save repair. The v0.2 suite remains in place to protect the original reload timing, duplicate assignment, deterministic resolution, unlock copy, and mobile accessibility contracts.
+
+### v1.0 Manual Feature Pass
+
+1. Confirm the command panel shows day, identity, mode, materials, research, influence, and prestige.
+2. Recruit a hero and confirm class skills, trait, morale, equipment slots, and personal goal appear.
+3. Upgrade a guildhall room and confirm its level and cost update.
+4. Complete an Uncommon or Elite contract and confirm materials, loot, faction standing, and hero growth.
+5. Unlock and explore a new region.
+6. Advance a day and confirm research income, morale recovery, injury recovery, and possible events.
+7. Complete research and hire staff.
+8. Buy and craft equipment, then equip a class-compatible item.
+9. Make a guild event choice and confirm its reward appears in the Guild Log.
+10. Switch between game modes and confirm the selected mode is persisted.
+11. Confirm Guild Records survive a reload.
+
 ## v0.2.0 Validation
 
 ### Automated Smoke Testing

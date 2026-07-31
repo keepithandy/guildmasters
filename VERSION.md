@@ -1,14 +1,21 @@
 # Version
 
-Current version: v0.2.0
+Current version: v1.0.0
 
-Current phase: reliability baseline
+Current phase: 22-phase roadmap foundation
 
-Current target: continue progression depth without weakening the v0.2 reliability contracts
+Current target: continue authored content and presentation polish without weakening the v1.0 reliability contracts
 
-Package version: `0.2.0`.
+Package version: `1.0.0`.
 
-Save-state schema version: `1`. Product metadata stored in current saves is `0.2.0`.
+Save-state schema version: `2`. Product metadata stored in current saves is `1.0.0`.
+
+## v1.0.0
+
+- Implemented the shared foundation for all 22 roadmap phases.
+- Added expanded heroes, contracts, regions, factions, guildhall rooms, equipment, crafting, research, staff, events, records, modes, and long-term progression.
+- Added v1.0 state repair and a dedicated roadmap smoke suite.
+- Preserved v0.2 reliability behavior and deterministic contract fixtures.
 
 ## v0.2.0
 

@@ -1,23 +1,48 @@
-export const GAME_VERSION = '0.2.0';
-export const SAVE_SCHEMA_VERSION = 1;
-export const MAX_LOG_ENTRIES = 50;
+export const GAME_VERSION = '1.0.0';
+export const SAVE_SCHEMA_VERSION = 2;
+export const MAX_LOG_ENTRIES = 80;
 
 export function createNewGameState(now = Date.now()) {
   return {
     saveVersion: SAVE_SCHEMA_VERSION,
     version: GAME_VERSION,
     guild: {
+      name: 'Guildmasters',
+      identity: 'Independent',
+      mode: 'story',
       level: 1,
       gold: 100,
       reputation: 0,
       heroCapacity: 3,
       totalGoldEarned: 0,
       contractsCompleted: 0,
-      contractsFailed: 0
+      contractsFailed: 0,
+      day: 1,
+      influence: 0,
+      researchPoints: 0,
+      materials: 0,
+      prestige: 0,
+      records: {
+        highestGuildLevel: 1,
+        highestHeroLevel: 1,
+        legendaryClears: 0,
+        regionsExplored: 0,
+        heroesRecruited: 0,
+        itemsCrafted: 0,
+        bossesDefeated: 0
+      }
     },
     heroes: [],
     activeContracts: [],
-    log: ['Guild founded. Recruit your first hero.'],
+    rooms: { 'main-hall': 1 },
+    inventory: [],
+    research: [],
+    staff: [],
+    factions: {},
+    regions: { unlocked: ['frontier'], explored: [] },
+    events: [],
+    flags: {},
+    log: [{ id: 'log-founded', timestamp: now, message: 'Guild founded. Recruit your first hero.' }],
     lastSeenAt: now,
     statusMessage: 'Guild ready.'
   };
@@ -38,27 +63,30 @@ export function repairGameState(input, now = Date.now()) {
   if (classification === 'malformed') return { ...fallback, statusMessage: 'Save data was malformed; a safe new guild was loaded.' };
   if (classification === 'future') return { ...fallback, statusMessage: `Save version ${input.saveVersion} is newer than this build and was not loaded.` };
 
-  const guild = input.guild && typeof input.guild === 'object' ? input.guild : {};
+  const sourceGuild = input.guild && typeof input.guild === 'object' ? input.guild : {};
   const heroes = Array.isArray(input.heroes) ? input.heroes.filter(Boolean).map(repairHero) : [];
   const heroIds = new Set(heroes.map(hero => hero.id));
   const activeContracts = repairActiveContracts(input.activeContracts, heroIds, now);
   const busyHeroIds = new Set(activeContracts.map(active => active.heroId));
   for (const hero of heroes) hero.status = busyHeroIds.has(hero.id) ? 'on_contract' : 'idle';
+  const guild = repairGuild(sourceGuild, fallback.guild);
+  guild.heroCapacity = Math.max(guild.heroCapacity, 3 + Math.max(0, numberMap(input.rooms, 'main-hall', 1) - 1));
+  guild.records.heroesRecruited = Math.max(guild.records.heroesRecruited, heroes.length);
 
   return {
     saveVersion: SAVE_SCHEMA_VERSION,
-    version: typeof input.version === 'string' ? input.version : GAME_VERSION,
-    guild: {
-      level: positiveInt(guild.level, 1),
-      gold: nonNegativeNumber(guild.gold, fallback.guild.gold),
-      reputation: nonNegativeNumber(guild.reputation, 0),
-      heroCapacity: positiveInt(guild.heroCapacity, 3),
-      totalGoldEarned: nonNegativeNumber(guild.totalGoldEarned, 0),
-      contractsCompleted: nonNegativeNumber(guild.contractsCompleted, 0),
-      contractsFailed: nonNegativeNumber(guild.contractsFailed, 0)
-    },
+    version: GAME_VERSION,
+    guild,
     heroes,
     activeContracts,
+    rooms: repairRooms(input.rooms),
+    inventory: repairInventory(input.inventory),
+    research: repairStringList(input.research),
+    staff: repairStringList(input.staff),
+    factions: repairFactions(input.factions),
+    regions: repairRegions(input.regions),
+    events: repairEvents(input.events),
+    flags: input.flags && typeof input.flags === 'object' ? { ...input.flags } : {},
     log: repairLog(input.log, fallback.log),
     lastSeenAt: nonNegativeNumber(input.lastSeenAt, now),
     statusMessage: classification === 'legacy' ? 'Legacy save repaired to the current schema.' : safeText(input.statusMessage, 'Save loaded.')
@@ -73,6 +101,62 @@ export function appendLog(state, message, timestamp = Date.now()) {
   };
   state.log = [entry, ...repairLog(state.log, [])].slice(0, MAX_LOG_ENTRIES);
   return state;
+}
+
+export function updateRecord(state, key, value) {
+  if (!state.guild.records || typeof state.guild.records !== 'object') state.guild.records = {};
+  state.guild.records[key] = Math.max(Number(state.guild.records[key]) || 0, Number(value) || 0);
+  return state;
+}
+
+function repairGuild(source, fallback) {
+  const records = source.records && typeof source.records === 'object' ? source.records : {};
+  return {
+    name: safeText(source.name, fallback.name),
+    identity: safeText(source.identity, fallback.identity),
+    mode: safeText(source.mode, fallback.mode),
+    level: positiveInt(source.level, 1),
+    gold: nonNegativeNumber(source.gold, fallback.gold),
+    reputation: nonNegativeNumber(source.reputation, 0),
+    heroCapacity: positiveInt(source.heroCapacity, 3),
+    totalGoldEarned: nonNegativeNumber(source.totalGoldEarned, 0),
+    contractsCompleted: nonNegativeNumber(source.contractsCompleted, 0),
+    contractsFailed: nonNegativeNumber(source.contractsFailed, 0),
+    day: positiveInt(source.day, 1),
+    influence: nonNegativeNumber(source.influence, 0),
+    researchPoints: nonNegativeNumber(source.researchPoints, 0),
+    materials: nonNegativeNumber(source.materials, 0),
+    prestige: nonNegativeNumber(source.prestige, 0),
+    records: {
+      highestGuildLevel: positiveInt(records.highestGuildLevel, positiveInt(source.level, 1)),
+      highestHeroLevel: positiveInt(records.highestHeroLevel, 1),
+      legendaryClears: nonNegativeNumber(records.legendaryClears, 0),
+      regionsExplored: nonNegativeNumber(records.regionsExplored, 0),
+      heroesRecruited: nonNegativeNumber(records.heroesRecruited, 0),
+      itemsCrafted: nonNegativeNumber(records.itemsCrafted, 0),
+      bossesDefeated: nonNegativeNumber(records.bossesDefeated, 0)
+    }
+  };
+}
+
+function repairHero(hero, index) {
+  const equipment = hero.equipment && typeof hero.equipment === 'object' ? hero.equipment : {};
+  return {
+    id: typeof hero.id === 'string' ? hero.id : `hero-${index + 1}`,
+    name: safeText(hero.name, 'Unnamed Hero'),
+    className: safeText(hero.className, 'Warrior'),
+    level: positiveInt(hero.level, 1),
+    power: positiveInt(hero.power, 10),
+    experience: nonNegativeNumber(hero.experience, 0),
+    morale: Math.max(0, Math.min(100, nonNegativeNumber(hero.morale, 75))),
+    status: 'idle',
+    traits: Array.isArray(hero.traits) ? hero.traits.filter(item => typeof item === 'string').slice(0, 4) : [],
+    skills: Array.isArray(hero.skills) ? hero.skills.filter(item => typeof item === 'string').slice(0, 8) : [],
+    equipment: { weapon: safeText(equipment.weapon, ''), offhand: safeText(equipment.offhand, ''), armor: safeText(equipment.armor, ''), charm: safeText(equipment.charm, '') },
+    injuries: Array.isArray(hero.injuries) ? hero.injuries.filter(item => typeof item === 'string').slice(0, 3) : [],
+    relationships: hero.relationships && typeof hero.relationships === 'object' ? { ...hero.relationships } : {},
+    personalGoal: safeText(hero.personalGoal, 'Become a respected guild veteran.')
+  };
 }
 
 function repairActiveContracts(value, heroIds, now) {
@@ -90,57 +174,64 @@ function repairActiveContracts(value, heroIds, now) {
     const baseId = typeof active.id === 'string' && active.id ? active.id : `active-repaired-${index}`;
     let id = baseId;
     let suffix = 1;
-    while (seenIds.has(id)) {
-      id = `${baseId}-${suffix}`;
-      suffix += 1;
-    }
-    repaired.push({
-      id,
-      heroId: active.heroId,
-      contractId: active.contractId,
-      startedAt,
-      completesAt: Math.max(startedAt, completesAt)
-    });
+    while (seenIds.has(id)) { id = `${baseId}-${suffix}`; suffix += 1; }
+    repaired.push({ id, heroId: active.heroId, contractId: active.contractId, startedAt, completesAt: Math.max(startedAt, completesAt) });
     seenHeroes.add(active.heroId);
     seenIds.add(id);
   }
   return repaired;
 }
 
+function repairRooms(value) {
+  const rooms = value && typeof value === 'object' ? value : {};
+  const repaired = {};
+  for (const [id, level] of Object.entries(rooms)) repaired[id] = Math.max(1, Math.min(5, positiveInt(level, 1)));
+  if (!repaired['main-hall']) repaired['main-hall'] = 1;
+  return repaired;
+}
+
+function repairInventory(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(item => item && typeof item === 'object').map((item, index) => ({
+    id: safeText(item.id, `item-${index}`),
+    itemId: safeText(item.itemId, ''),
+    quantity: positiveInt(item.quantity, 1),
+    acquiredAt: nonNegativeNumber(item.acquiredAt, 0)
+  }));
+}
+
+function repairStringList(value) { return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []; }
+
+function repairFactions(value) {
+  const factions = value && typeof value === 'object' ? value : {};
+  const repaired = {};
+  for (const [id, standing] of Object.entries(factions)) repaired[id] = Math.max(-100, Math.min(100, Number(standing) || 0));
+  return repaired;
+}
+
+function repairRegions(value) {
+  const regions = value && typeof value === 'object' ? value : {};
+  return {
+    unlocked: Array.isArray(regions.unlocked) ? regions.unlocked.filter(item => typeof item === 'string') : ['frontier'],
+    explored: Array.isArray(regions.explored) ? regions.explored.filter(item => typeof item === 'string') : []
+  };
+}
+
+function repairEvents(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(item => item && typeof item === 'object').slice(0, 4).map(item => ({ id: safeText(item.id, ''), eventId: safeText(item.eventId, ''), createdDay: positiveInt(item.createdDay, 1) }));
+}
+
 function repairLog(value, fallback) {
   const source = Array.isArray(value) ? value : fallback;
   return source.map((entry, index) => {
     const positionTimestamp = source.length - index;
-    if (entry && typeof entry === 'object') {
-      return {
-        id: safeText(entry.id, `log-repaired-${index}`),
-        timestamp: nonNegativeNumber(entry.timestamp, positionTimestamp),
-        message: safeText(entry.message, 'Guild event')
-      };
-    }
+    if (entry && typeof entry === 'object') return { id: safeText(entry.id, `log-repaired-${index}`), timestamp: nonNegativeNumber(entry.timestamp, positionTimestamp), message: safeText(entry.message, 'Guild event') };
     return { id: `log-legacy-${index}`, timestamp: positionTimestamp, message: safeText(entry, 'Guild event') };
   }).filter(entry => entry.message).sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_LOG_ENTRIES);
 }
 
-function repairHero(hero, index) {
-  return {
-    id: typeof hero.id === 'string' ? hero.id : `hero-${index + 1}`,
-    name: typeof hero.name === 'string' ? hero.name : 'Unnamed Hero',
-    className: typeof hero.className === 'string' ? hero.className : 'Warrior',
-    level: positiveInt(hero.level, 1),
-    power: positiveInt(hero.power, 10),
-    status: 'idle'
-  };
-}
-
-function safeText(value, fallback) {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
-}
-
-function positiveInt(value, fallback) {
-  return Number.isInteger(value) && value > 0 ? value : fallback;
-}
-
-function nonNegativeNumber(value, fallback) {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
-}
+function numberMap(value, key, fallback) { return value && typeof value === 'object' ? positiveInt(value[key], fallback) : fallback; }
+function safeText(value, fallback) { return typeof value === 'string' && value.trim() ? value.trim() : fallback; }
+function positiveInt(value, fallback) { return Number.isInteger(value) && value > 0 ? value : fallback; }
+function nonNegativeNumber(value, fallback) { return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback; }
