@@ -12,11 +12,11 @@ The v1.0 foundation wires the 22 planned phases into one shared browser-game sta
 8. **Economy and Resources — complete:** Gold, materials, research points, influence, prestige, wages represented through progression costs, and reward sinks.
 9. **World Map and Exploration — complete:** Five regions with unlock costs, exploration state, threats, and region-linked contracts.
 10. **Enemies and Monsters — complete:** Enemy threat catalog, roles, weaknesses, and contract-linked encounters.
-11. **Boss Encounters — complete:** Legendary contracts, boss flags, legendary rewards, boss records, and endgame threat hooks.
+11. **Boss Encounters — complete:** Four bespoke multi-phase bosses with unique mechanics, transcripts, requirements, rewards, world-threat effects, and persistent defeat records.
 12. **Factions and Politics — complete:** Six factions, standing, faction rewards, diplomatic research, and support pledges.
 13. **Dynamic Events — complete:** Guild events with decisions, rewards, consequences, and durable log entries.
-14. **Rival Guilds — complete:** Rival challenge roster, victory/defeat records, rewards, reputation pressure, and difficulty gates.
-15. **Story Campaign — complete:** Six authored chapters with requirements, rewards, active chapter state, and a legendary end goal.
+14. **Rival Guilds — complete:** Rival challenge roster, victory/defeat records, heat, evolving rumor pressure, rewards, and difficulty gates.
+15. **Story Campaign — complete:** Six authored chapters plus branching decisions that change factions, flags, research, influence, prestige, and the final route.
 16. **Advanced Systems — complete:** Research, staff, crafting, guild identities, hero bonds, relationship moments, achievements, and long-term upgrades.
 17. **Endgame Content — complete:** Legendary clears, prestige, records, final regions, boss hooks, and repeatable expedition progression.
 18. **Game Modes — complete:** Story, Sandbox, Challenge, and Ironman mode selection with mode-aware reward and failure behavior.

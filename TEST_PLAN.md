@@ -14,6 +14,8 @@ The v1.0 suite covers room upgrades, class skills and traits, expanded contract 
 
 The v1.2 suite additionally covers multi-round combat transcripts, temporary status effects, hero bonds, achievements, and their save-repair guarantees.
 
+The v1.3 suite covers bespoke boss phases, story decisions, rival heat and rumor pressure, world threat, and save repair for authored endgame progress.
+
 ### v1.0 Manual Feature Pass
 
 1. Confirm the command panel shows day, identity, mode, materials, research, influence, and prestige.

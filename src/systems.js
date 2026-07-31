@@ -1,5 +1,5 @@
 import { appendLog, updateRecord } from './gameState.js';
-import { ACHIEVEMENT_CATALOG, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RELATIONSHIP_EVENTS, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, catalogAchievement, catalogChapter, catalogEncounter, catalogEvent, catalogRegion, catalogResearch, catalogRelationshipEvent, catalogRival, catalogStaff } from './content.js';
+import { ACHIEVEMENT_CATALOG, BOSS_ENCOUNTERS, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RELATIONSHIP_EVENTS, RIVAL_GUILDS, STAFF_CATALOG, STORY_DECISIONS, TACTICAL_DRILLS, catalogAchievement, catalogBoss, catalogChapter, catalogEncounter, catalogEvent, catalogRegion, catalogResearch, catalogRelationshipEvent, catalogRival, catalogStaff, catalogStoryDecision } from './content.js';
 import { addInventory, findHero, heroTotalPower, trainHero } from './heroes.js';
 import { buyItem, upgradeRoom } from './guild.js';
 
@@ -16,6 +16,7 @@ export function advanceDay(state, now = Date.now()) {
     hero.morale = Math.min(100, (hero.morale || 75) + (state.rooms?.tavern || 1));
   }
   maybeCreateEvent(state, now);
+  advanceRivalPressure(state, now);
   state.statusMessage = `Day ${state.guild.day} begins. The guild has new opportunities.`;
   appendLog(state, state.statusMessage, now);
   return state;
@@ -119,17 +120,35 @@ export function advanceCampaign(state, now = Date.now()) {
   return state;
 }
 
+export function makeStoryChoice(state, decisionId, optionId, now = Date.now()) {
+  const decision = catalogStoryDecision(decisionId);
+  const option = decision?.options.find(candidate => candidate.id === optionId);
+  if (!decision || !option) return state;
+  if (state.campaign.decisionsMade.includes(decision.id)) return setSystemMessage(state, `${decision.title} has already been decided.`, now);
+  if (!state.campaign.chaptersCompleted.includes(decision.chapterId)) return setSystemMessage(state, `${decision.title} is not available yet.`, now);
+  state.campaign.decisionsMade.push(decision.id);
+  if (option.faction) state.factions[option.faction] = Math.min(100, (state.factions[option.faction] || 0) + 4);
+  state.guild.reputation += option.reputation || 0;
+  state.guild.researchPoints += option.research || 0;
+  state.guild.prestige += option.prestige || 0;
+  state.guild.influence += option.influence || 0;
+  if (option.flag) state.flags[option.flag] = true;
+  return setSystemMessage(state, `${decision.title}: ${option.label}. The guild’s story has changed.`, now);
+}
+
 export function challengeRival(state, rivalId, now = Date.now()) {
   const rival = catalogRival(rivalId);
   if (!rival) return state;
   if (state.guild.level < rival.requiredGuildLevel) return setSystemMessage(state, `${rival.name} requires guild level ${rival.requiredGuildLevel}.`, now);
   const rosterPower = state.heroes.reduce((total, hero) => total + heroTotalPower(hero), 0);
   const requiredPower = rival.requiredGuildLevel * 30;
-  state.rivals[rivalId] ||= { victories: 0, defeats: 0, reputation: 0 };
+  state.rivals[rivalId] ||= { victories: 0, defeats: 0, reputation: 0, heat: 0, lastAction: '' };
   const result = rosterPower >= requiredPower;
   if (result) {
     state.rivals[rivalId].victories += 1;
     state.rivals[rivalId].reputation += rival.rewardReputation;
+    state.rivals[rivalId].heat = 0;
+    state.rivals[rivalId].lastAction = 'challenged-and-defeated';
     state.guild.gold += rival.rewardGold;
     state.guild.reputation += rival.rewardReputation;
     state.guild.prestige += 2;
@@ -137,8 +156,63 @@ export function challengeRival(state, rivalId, now = Date.now()) {
     return setSystemMessage(state, `Rival challenge won against ${rival.name}. +${rival.rewardGold} gold and +${rival.rewardReputation} reputation.`, now);
   }
   state.rivals[rivalId].defeats += 1;
+  state.rivals[rivalId].heat = Math.min(10, state.rivals[rivalId].heat + 1);
+  state.rivals[rivalId].lastAction = 'challenge-lost';
   state.guild.reputation = Math.max(0, state.guild.reputation - 1);
   return setSystemMessage(state, `${rival.name} won the challenge. The guild lost 1 reputation but learned from the defeat.`, now);
+}
+
+export function challengeBoss(state, bossId, heroIds = [], now = Date.now()) {
+  const boss = catalogBoss(bossId);
+  const party = heroIds.map(heroId => findHero(state, heroId)).filter(Boolean).filter(hero => hero.status === 'idle');
+  if (!boss) return state;
+  if (state.guild.level < boss.requiredGuildLevel || state.guild.reputation < boss.requiredReputation) return setSystemMessage(state, `${boss.name} requires guild level ${boss.requiredGuildLevel} and ${boss.requiredReputation} reputation.`, now);
+  if (!state.regions.unlocked.includes(boss.region)) return setSystemMessage(state, `${boss.name} is beyond the ${boss.region.replaceAll('-', ' ')} region.`, now);
+  if (!party.length) return setSystemMessage(state, 'Choose at least one idle hero for the boss expedition.', now);
+  state.bosses.attempts[boss.id] = (state.bosses.attempts[boss.id] || 0) + 1;
+  const partyPower = party.reduce((total, hero) => total + heroTotalPower(hero), 0);
+  const counterClass = weaknessFor(boss.enemy);
+  const counterBonus = party.filter(hero => hero.className === counterClass).length * 18;
+  const transcript = [];
+  let totalRounds = 0;
+  let defeated = true;
+  for (const phase of boss.phases) {
+    let phaseHp = phase.hp;
+    let phaseRounds = 0;
+    while (phaseHp > 0 && phaseRounds < 4) {
+      phaseRounds += 1;
+      totalRounds += 1;
+      const phaseDamage = Math.max(8, Math.floor(partyPower * 0.28) + counterBonus + (phase.mechanic === 'armor' && party.some(hero => hero.className === 'Rogue') ? 12 : 0));
+      phaseHp = Math.max(0, phaseHp - phaseDamage);
+      transcript.push(`${phase.name}, round ${phaseRounds}: the party dealt ${phaseDamage} damage.`);
+      if (phaseHp > 0) {
+        const pressure = phase.attack - (party.some(hero => hero.className === 'Guardian') ? 5 : 0);
+        const target = party[totalRounds % party.length];
+        target.morale = Math.max(0, (target.morale || 75) - Math.max(1, Math.floor(pressure / 4)));
+        if (phase.mechanic === 'burn' || phase.mechanic === 'worldfire') target.statusEffects = ['burning'];
+        if (phase.mechanic === 'poison') target.statusEffects = ['poisoned'];
+        transcript.push(`${phase.name} answered with ${phase.mechanic}; ${target.name} endured the pressure.`);
+      }
+    }
+    if (phaseHp > 0) { defeated = false; break; }
+  }
+  state.combat.rounds += totalRounds;
+  state.combat.lastEncounter = { id: boss.id, name: boss.name, result: defeated ? 'victory' : 'defeat', rounds: totalRounds, transcript: transcript.slice(-12) };
+  party.forEach(hero => { hero.statusEffects = []; });
+  if (defeated) {
+    if (!state.bosses.defeated.includes(boss.id)) state.bosses.defeated.push(boss.id);
+    state.guild.records.bossesDefeated += 1;
+    state.guild.gold += boss.rewardGold;
+    state.guild.reputation += boss.rewardReputation;
+    state.guild.materials += boss.rewardMaterials;
+    state.guild.prestige += 5;
+    state.worldThreat = Math.max(0, state.worldThreat - 12);
+    awardAchievement(state, 'boss-slayer', now);
+    return setSystemMessage(state, `${boss.name} defeated across ${boss.phases.length} phases. The world threat recedes.`, now);
+  }
+  state.worldThreat = Math.min(100, state.worldThreat + 6);
+  if (state.guild.mode === 'ironman') party.forEach(hero => { hero.injuries = [...(hero.injuries || []), `Wounded by ${boss.name}`].slice(-3); });
+  return setSystemMessage(state, `${boss.name} survived the expedition. The guild must regroup before trying again.`, now);
 }
 
 export function runTacticalDrill(state, drillId, heroIds = [], now = Date.now()) {
@@ -236,13 +310,28 @@ export function recordOfflineReturn(state, previousLastSeen, activeBefore, now =
   return state;
 }
 
+function advanceRivalPressure(state, now) {
+  for (const rival of RIVAL_GUILDS) {
+    if (state.guild.level < rival.requiredGuildLevel) continue;
+    const record = state.rivals[rival.id] ||= { victories: 0, defeats: 0, reputation: 0, heat: 0, lastAction: '' };
+    record.heat = Math.min(10, record.heat + 1);
+    if (record.heat >= 3 && state.guild.day % 3 === 0) {
+      record.lastAction = 'rumor-campaign';
+      record.heat = 0;
+      state.guild.reputation = Math.max(0, state.guild.reputation - 1);
+      state.worldThreat = Math.min(100, state.worldThreat + 2);
+      appendLog(state, `${rival.name} spread rumors about the guild. Reputation -1.`, now);
+    }
+  }
+}
+
 export function bootstrapFoundation(state, now = Date.now()) {
   if (!state.inventory.length) addInventory(state, 'iron-sword', 1, now);
   if (!state.inventory.some(item => item.itemId === 'hunter-bow')) addInventory(state, 'hunter-bow', 1, now);
   return state;
 }
 
-export { ACHIEVEMENT_CATALOG, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RELATIONSHIP_EVENTS, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, buyItem, upgradeRoom };
+export { ACHIEVEMENT_CATALOG, BOSS_ENCOUNTERS, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RELATIONSHIP_EVENTS, RIVAL_GUILDS, STAFF_CATALOG, STORY_DECISIONS, TACTICAL_DRILLS, buyItem, upgradeRoom };
 
 function maybeCreateEvent(state, now) {
   if (state.events.length >= 2 || state.guild.day < 2) return;

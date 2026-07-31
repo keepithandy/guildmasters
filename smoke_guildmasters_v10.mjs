@@ -11,7 +11,7 @@ const originalRandom = Math.random;
 try {
   Math.random = () => 0;
   let state = createNewGameState(1000);
-  assert.equal(state.saveVersion, 4, 'new games use the v1.2 schema');
+  assert.equal(state.saveVersion, 5, 'new games use the v1.3 schema');
   assert.equal(ROOM_CATALOG.length, 9, 'guildhall catalog exposes the planned room system');
   assert.ok(CONTRACTS.some(contract => contract.tier === 'Elite'), 'elite contracts are wired');
   assert.ok(CONTRACTS.some(contract => contract.tier === 'Legendary'), 'legendary contracts are wired');

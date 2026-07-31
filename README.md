@@ -63,6 +63,7 @@ Guildmasters now includes:
 - The full roadmap foundation is playable in the browser.
 - Campaign chapters, rival guild challenges, tactical drills, and offline return summaries now turn the remaining roadmap hooks into playable actions.
 - Tactical encounters now resolve over multiple rounds with class abilities, temporary combat effects, saved transcripts, hero bonds, and achievement milestones.
+- Boss expeditions now use bespoke phases and mechanics; campaign choices alter faction routes, and rival guilds can build heat and launch rumor pressure.
 - Active contracts preserve absolute completion timestamps across reloads.
 - Dedicated tactical combat scenes, bespoke art, audio, and a larger authored story campaign remain natural follow-up polish layers on top of the completed data and progression foundation.
 
@@ -84,6 +85,7 @@ npm run smoke
 npm run smoke:v10
 npm run smoke:v11
 npm run smoke:v12
+npm run smoke:v13
 npm run smoke:all
 npm run report:progression
 ```

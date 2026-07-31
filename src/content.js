@@ -113,6 +113,7 @@ export const ACHIEVEMENT_CATALOG = [
   { id: 'first-blood', name: 'First Blood', description: 'Win your first tactical encounter.' },
   { id: 'tactical-veteran', name: 'Tactical Veteran', description: 'Win five tactical encounters.' },
   { id: 'rival-breaker', name: 'Rival Breaker', description: 'Defeat a rival guild.' },
+  { id: 'boss-slayer', name: 'Boss Slayer', description: 'Defeat a bespoke multi-phase boss.' },
   { id: 'bond-forged', name: 'Bond Forged', description: 'Build a bond between two heroes.' },
   { id: 'chapter-keeper', name: 'Chapter Keeper', description: 'Complete three campaign chapters.' },
   { id: 'legendary-guild', name: 'Legendary Guild', description: 'Complete the final campaign chapter.' }
@@ -122,6 +123,20 @@ export const RELATIONSHIP_EVENTS = [
   { id: 'campfire', title: 'Campfire Stories', description: 'Two heroes share stories after a hard day.', morale: 6, bond: 2 },
   { id: 'sparring', title: 'Friendly Sparring', description: 'A controlled duel turns into a lesson in trust.', morale: 4, bond: 3 },
   { id: 'shared-oath', title: 'A Shared Oath', description: 'The pair promise to watch each other’s backs.', morale: 8, bond: 4 }
+];
+
+export const BOSS_ENCOUNTERS = [
+  { id: 'goblin-king', name: 'The Goblin King', description: 'A warlord has united the frontier clans beneath one banner.', enemy: 'goblins', phases: [{ name: 'Warband', hp: 90, attack: 12, mechanic: 'swarm' }, { name: 'Crown Guard', hp: 120, attack: 16, mechanic: 'enrage' }], requiredGuildLevel: 3, requiredReputation: 18, rewardGold: 420, rewardReputation: 12, rewardMaterials: 10, region: 'frontier' },
+  { id: 'mirror-witch', name: 'The Mirror Witch', description: 'An ancient illusionist turns every weakness back upon its source.', enemy: 'spiders', phases: [{ name: 'Reflections', hp: 130, attack: 18, mechanic: 'echo' }, { name: 'Shattered Mirror', hp: 160, attack: 22, mechanic: 'poison' }], requiredGuildLevel: 5, requiredReputation: 35, rewardGold: 760, rewardReputation: 20, rewardMaterials: 18, region: 'greenwood' },
+  { id: 'ash-tyrant', name: 'The Ash Tyrant', description: 'A living furnace commands the burning mines beneath the mountains.', enemy: 'elementals', phases: [{ name: 'Molten Shell', hp: 190, attack: 24, mechanic: 'burn' }, { name: 'Eruption', hp: 240, attack: 30, mechanic: 'eruption' }], requiredGuildLevel: 7, requiredReputation: 55, rewardGold: 1200, rewardReputation: 28, rewardMaterials: 30, region: 'ashen-mountains' },
+  { id: 'dragon-below', name: 'The Dragon Below', description: 'The oldest threat beneath the world wakes for its final reckoning.', enemy: 'dragons', phases: [{ name: 'Ancient Scales', hp: 260, attack: 32, mechanic: 'armor' }, { name: 'Worldfire', hp: 340, attack: 40, mechanic: 'worldfire' }, { name: 'Last Breath', hp: 420, attack: 48, mechanic: 'enrage' }], requiredGuildLevel: 9, requiredReputation: 85, rewardGold: 3000, rewardReputation: 50, rewardMaterials: 60, region: 'forbidden-depths' }
+];
+
+export const STORY_DECISIONS = [
+  { id: 'frontier-alliance', chapterId: 'frontier-trouble', title: 'The Frontier Alliance', prompt: 'The Crown and the Rangers both want your support.', options: [{ id: 'crown', label: 'Stand with the Crown', faction: 'crown', reputation: 3, flag: 'crown-ally' }, { id: 'rangers', label: 'Stand with the Rangers', faction: 'rangers', reputation: 3, flag: 'ranger-ally' }] },
+  { id: 'old-seal', chapterId: 'old-secrets', title: 'The Old Seal', prompt: 'The Mages’ Circle asks whether the seal should be studied or destroyed.', options: [{ id: 'study', label: 'Study the seal', faction: 'mages', research: 6, flag: 'seal-studied' }, { id: 'destroy', label: 'Destroy the seal', reputation: 4, flag: 'seal-destroyed' }] },
+  { id: 'war-council', chapterId: 'war-of-influence', title: 'The War Council', prompt: 'Your allies want a single leader for the coming conflict.', options: [{ id: 'lead', label: 'Lead the coalition', prestige: 4, flag: 'coalition-leader' }, { id: 'mediate', label: 'Keep the factions equal', influence: 3, flag: 'coalition-mediator' }] },
+  { id: 'final-oath', chapterId: 'final-expedition', title: 'The Final Oath', prompt: 'Before the final expedition, the guild must decide what it will protect.', options: [{ id: 'people', label: 'Protect the people', reputation: 10, flag: 'people-protected' }, { id: 'knowledge', label: 'Preserve forbidden knowledge', research: 10, flag: 'knowledge-preserved' }] }
 ];
 
 export function catalogItem(id) { return ITEM_CATALOG.find(item => item.id === id) || null; }
@@ -137,3 +152,5 @@ export function catalogDrill(id) { return TACTICAL_DRILLS.find(drill => drill.id
 export function catalogEncounter(id) { return COMBAT_ENCOUNTERS.find(encounter => encounter.id === id) || null; }
 export function catalogAchievement(id) { return ACHIEVEMENT_CATALOG.find(achievement => achievement.id === id) || null; }
 export function catalogRelationshipEvent(id) { return RELATIONSHIP_EVENTS.find(event => event.id === id) || null; }
+export function catalogBoss(id) { return BOSS_ENCOUNTERS.find(boss => boss.id === id) || null; }
+export function catalogStoryDecision(id) { return STORY_DECISIONS.find(decision => decision.id === id) || null; }

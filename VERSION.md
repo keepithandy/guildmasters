@@ -1,14 +1,21 @@
 # Version
 
-Current version: v1.2.0
+Current version: v1.3.0
 
-Current phase: combat, relationships, and achievement depth
+Current phase: authored endgame depth
 
 Current target: continue authored content and presentation polish without weakening the v1.0 reliability contracts
 
-Package version: `1.2.0`.
+Package version: `1.3.0`.
 
-Save-state schema version: `4`. Product metadata stored in current saves is `1.2.0`.
+Save-state schema version: `5`. Product metadata stored in current saves is `1.3.0`.
+
+## v1.3.0
+
+- Added four bespoke multi-phase boss expeditions with unique mechanics, phase transcripts, rewards, and defeat records.
+- Added branching campaign decisions that change flags, faction standing, research, influence, and prestige.
+- Added rival heat, evolving rival actions, rumor pressure, and world-threat tracking.
+- Added v1.3 smoke coverage and save repair for authored endgame progress.
 
 ## v1.2.0
 

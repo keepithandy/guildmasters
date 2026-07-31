@@ -1,7 +1,7 @@
 import { CONTRACTS, activeContractDetails, calculateSuccessChance, contractUnlockProgress, contractUnlockRequirements, isContractUnlocked, nextContractUnlock } from './contracts.js';
 import { canUpgradeGuild, guildUpgradeBlockedReason, guildUpgradeCost, canUpgradeRoom, roomUpgradeCost } from './guild.js';
 import { canRecruitHero, heroTotalPower, RECRUIT_COST, recruitPowerBonus, recruitmentBlockedReason } from './heroes.js';
-import { ACHIEVEMENT_CATALOG, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, catalogChapter, catalogEvent, catalogItem } from './content.js';
+import { ACHIEVEMENT_CATALOG, BOSS_ENCOUNTERS, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, STORY_DECISIONS, catalogChapter, catalogEvent, catalogItem } from './content.js';
 
 export function render(state, actions) {
   const root = document.getElementById('app');
@@ -14,6 +14,7 @@ export function render(state, actions) {
     ${renderGuildPanel(state, nextUnlock, upgradeReason)}
     ${renderOfflinePanel(state)}
     ${renderCampaignPanel(state)}
+    ${renderStoryDecisionPanel(state)}
     ${renderEventPanel(state)}
     ${renderHeroPanel(state, recruitReason)}
     ${renderContractPanel(state)}
@@ -23,6 +24,7 @@ export function render(state, actions) {
     ${renderFactionPanel(state)}
     ${renderRivalPanel(state)}
     ${renderTacticalPanel(state)}
+    ${renderBossPanel(state)}
     ${renderRelationshipPanel(state)}
     ${renderAchievementPanel(state)}
     ${renderProgressionPanel(state)}
@@ -41,7 +43,7 @@ function renderGuildPanel(state, nextUnlock, upgradeReason) {
       <button data-action="advanceDay">Begin Day ${state.guild.day + 1}</button>
       <button data-action="saveGame">Save</button>
     </div></div>
-    <div class="stats-grid"><span>Level<strong>${state.guild.level}</strong></span><span>Gold<strong>${state.guild.gold}</strong></span><span>Reputation<strong>${state.guild.reputation}</strong></span><span>Heroes<strong>${state.heroes.length}/${state.guild.heroCapacity}</strong></span><span>Materials<strong>${state.guild.materials}</strong></span><span>Research<strong>${state.guild.researchPoints}</strong></span><span>Influence<strong>${state.guild.influence}</strong></span><span>Prestige<strong>${state.guild.prestige}</strong></span></div>
+    <div class="stats-grid"><span>Level<strong>${state.guild.level}</strong></span><span>Gold<strong>${state.guild.gold}</strong></span><span>Reputation<strong>${state.guild.reputation}</strong></span><span>Heroes<strong>${state.heroes.length}/${state.guild.heroCapacity}</strong></span><span>Materials<strong>${state.guild.materials}</strong></span><span>Research<strong>${state.guild.researchPoints}</strong></span><span>Influence<strong>${state.guild.influence}</strong></span><span>World threat<strong>${state.worldThreat || 0}%</strong></span></div>
     <p class="helper-text">Identity: <strong>${escapeHtml(state.guild.identity)}</strong> • Mode: <strong>${escapeHtml(state.guild.mode)}</strong> • Day ${state.guild.day}</p>
     <div class="button-row compact-actions"><button data-action="identity" data-value="Noble Protectors">Noble Identity</button><button data-action="identity" data-value="Monster Hunters">Hunter Identity</button><button data-action="mode" data-value="sandbox">Sandbox Mode</button><button data-action="mode" data-value="challenge">Challenge Mode</button></div>
     <p class="helper-text">${escapeHtml(nextUnlock ? renderNextUnlock(state, nextUnlock) : 'All available contracts unlocked.')}</p><p class="helper-text">${escapeHtml(nextActionGuidance(state))}</p>
@@ -54,6 +56,12 @@ function renderEventPanel(state) {
   return `<section class="panel event-panel"><div class="panel-title-row"><h2>Guild Events</h2><span class="badge">${state.events.length} waiting</span></div>
     ${state.events.length ? `<div class="card-list">${state.events.map(active => { const event = catalogEvent(active.eventId); return event ? `<article class="card event-card"><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(event.description)}</p><div class="button-row">${event.options.map(option => `<button data-action="event" data-event-id="${escapeHtml(event.id)}" data-option-id="${escapeHtml(option.id)}">${escapeHtml(option.label)}</button>`).join('')}</div></article>` : ''; }).join('')}</div>` : '<p class="empty-copy">No urgent events. Begin another day to see what the world brings.</p>'}
   </section>`;
+}
+
+function renderStoryDecisionPanel(state) {
+  const available = STORY_DECISIONS.filter(decision => state.campaign.chaptersCompleted.includes(decision.chapterId) && !state.campaign.decisionsMade.includes(decision.id));
+  if (!available.length) return '';
+  return `<section class="panel story-decision-panel"><div class="panel-title-row"><div><p class="eyebrow">Branching story</p><h2>Decisions Await</h2></div><span class="badge">${available.length} choice${available.length === 1 ? '' : 's'}</span></div><div class="card-list">${available.map(decision => `<article class="card"><h3>${escapeHtml(decision.title)}</h3><p>${escapeHtml(decision.prompt)}</p><div class="button-row">${decision.options.map(option => `<button data-action="storyChoice" data-decision-id="${escapeHtml(decision.id)}" data-option-id="${escapeHtml(option.id)}">${escapeHtml(option.label)}</button>`).join('')}</div></article>`).join('')}</div></section>`;
 }
 
 function renderOfflinePanel(state) {
@@ -124,13 +132,18 @@ function renderFactionPanel(state) {
 }
 
 function renderRivalPanel(state) {
-  return `<section class="panel rival-panel"><div class="panel-title-row"><div><p class="eyebrow">Competition and pressure</p><h2>Rival Guilds</h2></div><span class="badge">${Object.values(state.rivals).reduce((total, rival) => total + rival.victories, 0)} wins</span></div><div class="card-list">${RIVAL_GUILDS.map(rival => { const score = state.rivals[rival.id] || { victories: 0, defeats: 0 }; return `<article class="card"><div class="card-title-row"><h3>${escapeHtml(rival.name)}</h3><span class="badge">${score.victories}–${score.defeats}</span></div><p>${escapeHtml(rival.style)} • Requires guild level ${rival.requiredGuildLevel}.</p><button data-action="challengeRival" data-rival-id="${escapeHtml(rival.id)}" ${state.guild.level < rival.requiredGuildLevel || !state.heroes.length ? 'disabled' : ''}>Challenge Rival</button></article>`; }).join('')}</div></section>`;
+  return `<section class="panel rival-panel"><div class="panel-title-row"><div><p class="eyebrow">Competition and pressure</p><h2>Rival Guilds</h2></div><span class="badge">${Object.values(state.rivals).reduce((total, rival) => total + rival.victories, 0)} wins</span></div><div class="card-list">${RIVAL_GUILDS.map(rival => { const score = state.rivals[rival.id] || { victories: 0, defeats: 0, heat: 0, lastAction: '' }; return `<article class="card"><div class="card-title-row"><h3>${escapeHtml(rival.name)}</h3><span class="badge">${score.victories}–${score.defeats}</span></div><p>${escapeHtml(rival.style)} • Requires guild level ${rival.requiredGuildLevel}.</p><p class="mini-record">Rival heat: ${score.heat || 0}/10${score.lastAction ? ` • Last action: ${escapeHtml(score.lastAction)}` : ''}</p><button data-action="challengeRival" data-rival-id="${escapeHtml(rival.id)}" ${state.guild.level < rival.requiredGuildLevel || !state.heroes.length ? 'disabled' : ''}>Challenge Rival</button></article>`; }).join('')}</div></section>`;
 }
 
 function renderTacticalPanel(state) {
   const idleCount = state.heroes.filter(hero => hero.status === 'idle').length;
   const last = state.combat?.lastEncounter;
   return `<section class="panel tactical-panel"><div class="panel-title-row"><div><p class="eyebrow">Expedition preparation</p><h2>Tactical Encounters</h2></div><span class="badge">${state.tactical.encountersWon} wins</span></div><p class="helper-text">Multi-round encounters use all idle heroes as a temporary party. Class abilities create guards, marks, burns, taunts, and evasive openings.</p>${last ? `<p class="mini-record">Last encounter: ${escapeHtml(last.name)} • ${escapeHtml(last.result)} in ${last.rounds} rounds.</p>` : ''}<div class="card-list">${COMBAT_ENCOUNTERS.map(encounter => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(encounter.name)}</h3><span class="badge">${encounter.enemyHp} HP</span></div><p>Enemy: ${escapeHtml(encounter.enemy)} • ${encounter.rounds} rounds • Reward: ${encounter.rewardGold}g and ${encounter.rewardMaterials} materials.</p><button data-action="runTacticalDrill" data-drill-id="${escapeHtml(encounter.id)}" ${idleCount === 0 ? 'disabled' : ''}>Run with ${idleCount} idle hero${idleCount === 1 ? '' : 'es'}</button></article>`).join('')}</div></section>`;
+}
+
+function renderBossPanel(state) {
+  const idleCount = state.heroes.filter(hero => hero.status === 'idle').length;
+  return `<section class="panel boss-panel"><div class="panel-title-row"><div><p class="eyebrow">Legendary endgame</p><h2>Boss Expeditions</h2></div><span class="badge">${state.bosses.defeated.length}/${BOSS_ENCOUNTERS.length} defeated</span></div><p class="helper-text">Each boss has unique phases, mechanics, requirements, and a persistent defeat record.</p><div class="card-list">${BOSS_ENCOUNTERS.map(boss => { const defeated = state.bosses.defeated.includes(boss.id); const unlocked = state.guild.level >= boss.requiredGuildLevel && state.guild.reputation >= boss.requiredReputation && state.regions.unlocked.includes(boss.region); return `<article class="card ${unlocked ? '' : 'locked-card'}"><div class="card-title-row"><h3>${escapeHtml(boss.name)}</h3><span class="badge">${boss.phases.length} phases</span></div><p>${escapeHtml(boss.description)}</p><p class="mini-record">Requires guild ${boss.requiredGuildLevel} • ${boss.requiredReputation} reputation • ${escapeHtml(boss.region.replaceAll('-', ' '))}</p><button data-action="challengeBoss" data-boss-id="${escapeHtml(boss.id)}" ${!unlocked || idleCount === 0 || defeated ? 'disabled' : ''}>${defeated ? 'Defeated' : `Challenge with ${idleCount} idle heroes`}</button></article>`; }).join('')}</div></section>`;
 }
 
 function renderRelationshipPanel(state) {
@@ -166,6 +179,7 @@ function bindActions(root, actions) {
     const action = button.dataset.action;
     if (action === 'startContract') actions.startContract(button.dataset.heroId, button.dataset.contractId);
     else if (action === 'event') actions.chooseEvent(button.dataset.eventId, button.dataset.optionId);
+    else if (action === 'storyChoice') actions.makeStoryChoice(button.dataset.decisionId, button.dataset.optionId);
     else if (action === 'identity') actions.setGuildIdentity(button.dataset.value);
     else if (action === 'mode') actions.setMode(button.dataset.value);
     else if (action === 'trainHero') actions.trainHero(button.dataset.heroId);
@@ -181,6 +195,7 @@ function bindActions(root, actions) {
     else if (action === 'advanceDay') actions.advanceDay();
     else if (action === 'advanceCampaign') actions.advanceCampaign();
     else if (action === 'challengeRival') actions.challengeRival(button.dataset.rivalId);
+    else if (action === 'challengeBoss') actions.challengeBoss(button.dataset.bossId);
     else if (action === 'runTacticalDrill') actions.runTacticalDrill(button.dataset.drillId);
     else if (action === 'bondHeroes') actions.bondHeroes(button.dataset.firstHeroId, button.dataset.secondHeroId);
     else if (action === 'recruitHero') actions.recruitHero();

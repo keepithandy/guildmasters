@@ -1,5 +1,5 @@
-export const GAME_VERSION = '1.2.0';
-export const SAVE_SCHEMA_VERSION = 4;
+export const GAME_VERSION = '1.3.0';
+export const SAVE_SCHEMA_VERSION = 5;
 export const MAX_LOG_ENTRIES = 80;
 
 export function createNewGameState(now = Date.now()) {
@@ -41,8 +41,10 @@ export function createNewGameState(now = Date.now()) {
     factions: {},
     regions: { unlocked: ['frontier'], explored: [] },
     events: [],
-    campaign: { chaptersCompleted: [], activeChapter: 'small-beginning' },
+    campaign: { chaptersCompleted: [], activeChapter: 'small-beginning', decisionsMade: [] },
     rivals: {},
+    bosses: { defeated: [], attempts: {} },
+    worldThreat: 0,
     tactical: { drillsCompleted: 0, encountersWon: 0, encountersLost: 0 },
     combat: { victories: 0, defeats: 0, rounds: 0, lastEncounter: null },
     achievements: [],
@@ -95,6 +97,8 @@ export function repairGameState(input, now = Date.now()) {
     events: repairEvents(input.events),
     campaign: repairCampaign(input.campaign),
     rivals: repairRivals(input.rivals),
+    bosses: repairBosses(input.bosses),
+    worldThreat: Math.max(0, Math.min(100, Number(input.worldThreat) || 0)),
     tactical: repairTactical(input.tactical),
     combat: repairCombat(input.combat),
     achievements: repairStringList(input.achievements),
@@ -241,7 +245,8 @@ function repairCampaign(value) {
   const campaign = value && typeof value === 'object' ? value : {};
   return {
     chaptersCompleted: Array.isArray(campaign.chaptersCompleted) ? campaign.chaptersCompleted.filter(item => typeof item === 'string') : [],
-    activeChapter: safeText(campaign.activeChapter, 'small-beginning')
+    activeChapter: safeText(campaign.activeChapter, 'small-beginning'),
+    decisionsMade: Array.isArray(campaign.decisionsMade) ? campaign.decisionsMade.filter(item => typeof item === 'string') : []
   };
 }
 
@@ -250,9 +255,17 @@ function repairRivals(value) {
   const repaired = {};
   for (const [id, rival] of Object.entries(rivals)) {
     if (!rival || typeof rival !== 'object') continue;
-    repaired[id] = { victories: nonNegativeNumber(rival.victories, 0), defeats: nonNegativeNumber(rival.defeats, 0), reputation: nonNegativeNumber(rival.reputation, 0) };
+    repaired[id] = { victories: nonNegativeNumber(rival.victories, 0), defeats: nonNegativeNumber(rival.defeats, 0), reputation: nonNegativeNumber(rival.reputation, 0), heat: nonNegativeNumber(rival.heat, 0), lastAction: safeText(rival.lastAction, '') };
   }
   return repaired;
+}
+
+function repairBosses(value) {
+  const bosses = value && typeof value === 'object' ? value : {};
+  const attempts = bosses.attempts && typeof bosses.attempts === 'object' ? bosses.attempts : {};
+  const repairedAttempts = {};
+  for (const [id, count] of Object.entries(attempts)) repairedAttempts[id] = nonNegativeNumber(count, 0);
+  return { defeated: Array.isArray(bosses.defeated) ? bosses.defeated.filter(item => typeof item === 'string') : [], attempts: repairedAttempts };
 }
 
 function repairTactical(value) {
