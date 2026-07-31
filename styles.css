@@ -250,6 +250,11 @@ p {
 .progress-track span { background: var(--accent); display: block; height: 100%; transition: width 0.2s ease; }
 .inventory-chip { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line-soft); border-radius: 999px; display: inline-block; margin: 0 0.2rem 0.2rem 0; padding: 0.2rem 0.38rem; }
 .event-card { border-color: var(--accent); }
+.chapter-list { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.45rem; }
+.chapter-pill { background: rgba(255, 255, 255, 0.045); border: 1px solid var(--line-soft); border-radius: 999px; color: var(--muted); font-size: 0.68rem; padding: 0.18rem 0.35rem; }
+.chapter-pill.current { border-color: var(--accent); color: var(--accent-strong); }
+.chapter-pill.complete { border-color: #4e7f4c; color: #bfe8b5; }
+.offline-panel { border-color: var(--accent); }
 
 @media (min-width: 680px) {
   #app { grid-template-columns: repeat(2, minmax(0, 1fr)); }
