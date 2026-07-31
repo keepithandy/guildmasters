@@ -2,6 +2,8 @@ const DRAWER_QUERY = '(max-width: 1279px)';
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 const NAVIGATION_CONTROL_SELECTOR = 'a[href], button:not([disabled]), [tabindex]';
 
+import { loadPreferences, updatePreferences } from './preferences.js';
+
 export function initQuickNavigation() {
   const navigation = document.getElementById('quickNav');
   const openButton = document.getElementById('quickNavToggle');
@@ -14,6 +16,7 @@ export function initQuickNavigation() {
   const drawerMedia = window.matchMedia(DRAWER_QUERY);
   const groupButtons = [...navigation.querySelectorAll('.quick-nav-group-toggle')];
   const sectionLinks = [...navigation.querySelectorAll('.quick-nav-link')];
+  const preferences = loadPreferences();
   let returnFocus = null;
 
   function setGroupExpanded(button, expanded) {
@@ -117,8 +120,14 @@ export function initQuickNavigation() {
   }
 
   groupButtons.forEach(button => {
+    const groupId = button.getAttribute('aria-controls');
+    if (Object.prototype.hasOwnProperty.call(preferences.navGroups, groupId)) {
+      setGroupExpanded(button, preferences.navGroups[groupId] === true);
+    }
     button.addEventListener('click', () => {
-      setGroupExpanded(button, button.getAttribute('aria-expanded') !== 'true');
+      const expanded = button.getAttribute('aria-expanded') !== 'true';
+      setGroupExpanded(button, expanded);
+      updatePreferences(current => { current.navGroups[groupId] = expanded; });
     });
   });
 

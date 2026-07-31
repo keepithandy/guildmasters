@@ -11,7 +11,7 @@ Guildmasters is a browser-based fantasy guild-management strategy game focused o
 5. Collect gold, reputation, and hero growth.
 6. Upgrade the guild and review the durable Guild Log.
 
-## v2.0.0-rc.2 Release Candidate
+## v2.0.0-rc.3 Release Candidate
 
 The release candidate wires all 22 planned phases into one playable dashboard:
 
@@ -20,6 +20,7 @@ The release candidate wires all 22 planned phases into one playable dashboard:
 - Guildhall rooms, staff, research, crafting, inventory, records, guild identities, game modes, dynamic events, world regions, and faction pledges.
 - Save repair keeps the original v0.2 reliability guarantees while preserving the new systems.
 - A persistent desktop command index and mobile Quick Menu provide press-to-expand shortcuts to all permanent dashboard sections.
+- A QoL layer adds remembered panel collapse/pinning, hero and contract filters, recommended assignment actions, unlock disclosures, compact density, and a persistent activity bar.
 
 This is a functional release candidate, not a claim that every future art, audio, balance, or authored-content decision is final. The dedicated roadmap audit verifies that all 22 phases are represented, callable, save-safe, and connected to the playable loop.
 
@@ -92,11 +93,12 @@ npm run smoke:v12
 npm run smoke:v13
 npm run smoke:roadmap
 npm run smoke:navigation
+npm run smoke:qol
 npm run smoke:all
 npm run report:progression
 ```
 
-GitHub Actions runs the same smoke and report commands on pull requests and `main`. The smoke covers save repair, reload timing, double assignment, deterministic success/failure boundaries, partial failure rewards, Guild Log retention, live-region copy, mobile layout contracts, and quick-navigation targets.
+GitHub Actions runs the same smoke and report commands on pull requests and `main`. The smoke covers save repair, reload timing, double assignment, deterministic success/failure boundaries, partial failure rewards, Guild Log retention, live-region copy, mobile layout contracts, quick-navigation targets, and QoL preference wiring.
 
 The progression report prints the current recruit cost and contract table, and flags unreachable, non-positive, or obvious reward/cost discontinuities. It is read-only analysis and does not claim automatic balance correctness.
 

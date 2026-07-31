@@ -1,5 +1,24 @@
 # Guildmasters Test Plan
 
+## v2.0.0-rc.3 QoL Validation
+
+Run the dedicated QoL audit:
+
+```bash
+npm run smoke:qol
+```
+
+The audit verifies the persistent command bar, activity center, remembered dashboard preferences, hero and contract filters, recommended assignment actions, unlock disclosures, compact density, and the unchanged save schema.
+
+Manual QoL checks:
+
+1. Collapse and pin a dashboard panel, reload, and confirm both choices persist.
+2. Filter and sort heroes and contracts, reload, and confirm the selected views persist.
+3. Open Alerts, mark the activity read, and open the Guild Log from the activity center.
+4. Switch between Comfortable and Compact display density.
+5. Expand a locked contract’s unlock path and confirm each requirement is visibly marked.
+6. Verify the recommended hero action appears first on an available contract.
+
 ## v2.0.0-rc.2 Navigation Validation
 
 Run the dedicated quick-navigation audit:

@@ -16,6 +16,7 @@ state = recordOfflineReturn(state, previousLastSeen, activeContractsBeforeLoad);
 saveGame(state);
 
 const actions = {
+  refresh() { render(state, actions); },
   recruitHero() { state = recruitHero(state); saveAndRender(); },
   startContract(heroId, contractId) { state = startContract(state, heroId, contractId); saveAndRender(); },
   upgradeGuild() { state = upgradeGuild(state); saveAndRender(); },

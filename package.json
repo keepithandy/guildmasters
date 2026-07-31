@@ -1,6 +1,6 @@
 {
   "name": "guildmasters",
-  "version": "2.0.0-rc.2",
+  "version": "2.0.0-rc.3",
   "private": true,
   "type": "module",
   "description": "Fantasy guild-management strategy game with a complete 22-phase release-candidate foundation.",
@@ -12,7 +12,8 @@
     "smoke:v13": "node smoke_guildmasters_v13.mjs",
     "smoke:roadmap": "node smoke_guildmasters_roadmap.mjs",
     "smoke:navigation": "node smoke_guildmasters_navigation.mjs",
-    "smoke:all": "node smoke_guildmasters_v01.mjs && node smoke_guildmasters_v10.mjs && node smoke_guildmasters_v11.mjs && node smoke_guildmasters_v12.mjs && node smoke_guildmasters_v13.mjs && node smoke_guildmasters_roadmap.mjs && node smoke_guildmasters_navigation.mjs",
+    "smoke:qol": "node smoke_guildmasters_qol.mjs",
+    "smoke:all": "node smoke_guildmasters_v01.mjs && node smoke_guildmasters_v10.mjs && node smoke_guildmasters_v11.mjs && node smoke_guildmasters_v12.mjs && node smoke_guildmasters_v13.mjs && node smoke_guildmasters_roadmap.mjs && node smoke_guildmasters_navigation.mjs && node smoke_guildmasters_qol.mjs",
     "check": "npm run smoke:all",
     "report:progression": "node scripts/progression-report.mjs"
   }

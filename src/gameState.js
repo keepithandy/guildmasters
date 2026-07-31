@@ -1,4 +1,4 @@
-export const GAME_VERSION = '2.0.0-rc.2';
+export const GAME_VERSION = '2.0.0-rc.3';
 export const SAVE_SCHEMA_VERSION = 5;
 export const MAX_LOG_ENTRIES = 80;
 

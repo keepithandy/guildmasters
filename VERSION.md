@@ -1,14 +1,21 @@
 # Version
 
-Current version: v2.0.0-rc.2
+Current version: v2.0.0-rc.3
 
-Current phase: 22-phase release candidate presentation and navigation verification
+Current phase: 22-phase release candidate quality-of-life verification
 
 Current target: complete manual browser QA, balance tuning, and final presentation polish before v2.0.0 final
 
-Package version: `2.0.0-rc.2`.
+Package version: `2.0.0-rc.3`.
 
-Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.2`.
+Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.3`.
+
+## v2.0.0-rc.3
+
+- Added collapsible and pinnable dashboard sections with remembered UI preferences, back-to-top links, and compact display density.
+- Added hero and contract filters, sorting, recommended assignment actions, and expandable unlock requirements.
+- Added a persistent command bar with resource totals, active-expedition counts, save access, and a readable activity center.
+- Added mobile command-bar refinements and a dedicated QoL smoke audit while preserving save schema `5` and gameplay balance.
 
 ## v2.0.0-rc.2
 

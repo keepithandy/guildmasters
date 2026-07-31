@@ -2,6 +2,9 @@ import { CONTRACTS, activeContractDetails, calculateSuccessChance, contractUnloc
 import { canUpgradeGuild, guildUpgradeBlockedReason, guildUpgradeCost, canUpgradeRoom, roomUpgradeCost } from './guild.js';
 import { canRecruitHero, heroTotalPower, RECRUIT_COST, recruitPowerBonus, recruitmentBlockedReason } from './heroes.js';
 import { ACHIEVEMENT_CATALOG, BOSS_ENCOUNTERS, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, STORY_DECISIONS, catalogChapter, catalogEvent, catalogItem } from './content.js';
+import { loadPreferences, updatePreferences } from './preferences.js';
+
+let notificationsOpen = false;
 
 export function render(state, actions) {
   const root = document.getElementById('app');
@@ -9,7 +12,10 @@ export function render(state, actions) {
   const nextUnlock = nextContractUnlock(state);
   const recruitReason = recruitmentBlockedReason(state);
   const upgradeReason = guildUpgradeBlockedReason(state);
+  const preferences = loadPreferences();
+  root.dataset.density = preferences.density;
   root.innerHTML = `
+    ${renderCommandBar(state, preferences)}
     <p id="guildStatus" class="status-banner" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(state.statusMessage || 'Guild ready.')}</p>
     ${renderGuildPanel(state, nextUnlock, upgradeReason)}
     ${renderOfflinePanel(state)}
@@ -33,6 +39,18 @@ export function render(state, actions) {
     ${renderLogPanel(state)}
   `;
   bindActions(root, actions);
+  decorateDashboard(root, actions, preferences);
+}
+
+function renderCommandBar(state, preferences) {
+  const unreadCount = state.log.filter(entry => Number(entry?.timestamp) > Number(preferences.notificationsReadAt || 0)).length;
+  const recentEntries = state.log.slice(0, 8);
+  return `<section id="command-bar" class="command-bar" data-density="${escapeHtml(preferences.density)}" aria-label="Guild at a glance">
+    <div class="command-bar-heading"><p class="eyebrow">At a glance</p><strong>Day ${state.guild.day}</strong><span>${state.heroes.filter(hero => hero.status === 'idle').length} idle heroes • ${state.activeContracts.length} expeditions away</span></div>
+    <div class="command-resources" aria-label="Guild resources"><span>Gold<strong>${state.guild.gold}</strong></span><span>Rep<strong>${state.guild.reputation}</strong></span><span>Materials<strong>${state.guild.materials}</strong></span><span>Influence<strong>${state.guild.influence}</strong></span></div>
+    <div class="command-bar-actions"><button data-action="advanceDay">Begin Day ${state.guild.day + 1}</button><button data-action="saveGame" class="secondary-action">Save</button><button data-ui-action="toggleNotifications" class="notification-trigger secondary-action" aria-expanded="${notificationsOpen}" aria-controls="notificationCenter">Alerts <span class="notification-count ${unreadCount ? 'has-unread' : ''}">${unreadCount}</span></button><label class="density-control">View<select data-ui-control="density" aria-label="Display density"><option value="comfortable" ${preferences.density === 'comfortable' ? 'selected' : ''}>Comfortable</option><option value="compact" ${preferences.density === 'compact' ? 'selected' : ''}>Compact</option></select></label></div>
+    <div id="notificationCenter" class="notification-center" ${notificationsOpen ? '' : 'hidden'}><div class="notification-heading"><strong>Recent activity</strong><button data-ui-action="markNotificationsRead" class="text-action">Mark read</button></div>${recentEntries.length ? `<ul>${recentEntries.map(entry => `<li><span>${escapeHtml(entry.message)}</span><small>${formatRelativeTime(entry.timestamp)}</small></li>`).join('')}</ul>` : '<p class="empty-copy">No activity yet.</p>'}<button data-ui-action="openLog" class="text-action">Open Guild Log</button></div>
+  </section>`;
 }
 
 function renderGuildPanel(state, nextUnlock, upgradeReason) {
@@ -77,10 +95,15 @@ function renderCampaignPanel(state) {
 }
 
 function renderHeroPanel(state, recruitReason) {
-  return `<section id="heroes" class="panel hero-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Roster and relationships</p><h2>Heroes</h2></div><button data-action="recruitHero" ${canRecruitHero(state) ? '' : 'disabled'}>Recruit Hero (${RECRUIT_COST}g)</button></div>
+  const preferences = loadPreferences();
+  const heroFilter = preferences.heroFilter || 'all';
+  const heroSort = preferences.heroSort || 'recommended';
+  const visibleHeroes = sortHeroes(filterHeroes(state.heroes, heroFilter), heroSort);
+  return `<section id="heroes" class="panel hero-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Roster and relationships</p><h2>Heroes <span class="section-count">${visibleHeroes.length}/${state.heroes.length}</span></h2></div><button data-action="recruitHero" ${canRecruitHero(state) ? '' : 'disabled'}>Recruit Hero (${RECRUIT_COST}g)</button></div>
     <p class="helper-text">Recruit bonus: +${recruitPowerBonus(state)} power. Training, traits, skills, morale, equipment, injuries, and personal goals shape every expedition.</p>
     ${recruitReason ? `<p class="blocked-copy">${escapeHtml(recruitReason)}</p>` : ''}
-    <div class="card-list">${state.heroes.length ? state.heroes.map(hero => renderHero(state, hero)).join('') : '<p class="empty-copy">No heroes yet. Recruit your first hero when you have an open slot and enough gold.</p>'}</div>
+    <div class="qol-toolbar"><label>Show<select data-ui-control="heroFilter" aria-label="Filter heroes"><option value="all" ${heroFilter === 'all' ? 'selected' : ''}>All heroes</option><option value="idle" ${heroFilter === 'idle' ? 'selected' : ''}>Idle</option><option value="deployed" ${heroFilter === 'deployed' ? 'selected' : ''}>On contract</option><option value="injured" ${heroFilter === 'injured' ? 'selected' : ''}>Injured</option></select></label><label>Sort<select data-ui-control="heroSort" aria-label="Sort heroes"><option value="recommended" ${heroSort === 'recommended' ? 'selected' : ''}>Recommended</option><option value="power" ${heroSort === 'power' ? 'selected' : ''}>Power</option><option value="level" ${heroSort === 'level' ? 'selected' : ''}>Level</option><option value="morale" ${heroSort === 'morale' ? 'selected' : ''}>Morale</option><option value="name" ${heroSort === 'name' ? 'selected' : ''}>Name</option></select></label></div>
+    <div class="card-list">${visibleHeroes.length ? visibleHeroes.map(hero => renderHero(state, hero)).join('') : state.heroes.length ? '<p class="empty-copy">No heroes match this view.</p>' : '<p class="empty-copy">No heroes yet. Recruit your first hero when you have an open slot and enough gold.</p>'}</div>
   </section>`;
 }
 
@@ -94,17 +117,20 @@ function renderHero(state, hero) {
 }
 
 function renderContractPanel(state) {
-  return `<section id="contract-board" class="panel contract-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Risk and reward</p><h2>Contract Board</h2></div><span class="badge">${CONTRACTS.length} contracts</span></div><div class="card-list">${CONTRACTS.map(contract => renderContract(state, contract)).join('')}</div></section>`;
+  const preferences = loadPreferences();
+  const contractFilter = preferences.contractFilter || 'all';
+  const contractSort = preferences.contractSort || 'recommended';
+  const visibleContracts = sortContracts(filterContracts(state, contractFilter), contractSort, state);
+  return `<section id="contract-board" class="panel contract-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Risk and reward</p><h2>Contract Board <span class="section-count">${visibleContracts.length}/${CONTRACTS.length}</span></h2></div><span class="badge">${state.activeContracts.length} active</span></div><div class="qol-toolbar"><label>Show<select data-ui-control="contractFilter" aria-label="Filter contracts"><option value="all" ${contractFilter === 'all' ? 'selected' : ''}>All contracts</option><option value="available" ${contractFilter === 'available' ? 'selected' : ''}>Available</option><option value="locked" ${contractFilter === 'locked' ? 'selected' : ''}>Locked</option><option value="boss" ${contractFilter === 'boss' ? 'selected' : ''}>Boss contracts</option></select></label><label>Sort<select data-ui-control="contractSort" aria-label="Sort contracts"><option value="recommended" ${contractSort === 'recommended' ? 'selected' : ''}>Recommended</option><option value="reward" ${contractSort === 'reward' ? 'selected' : ''}>Reward</option><option value="power" ${contractSort === 'power' ? 'selected' : ''}>Required power</option><option value="duration" ${contractSort === 'duration' ? 'selected' : ''}>Duration</option></select></label></div><div class="card-list">${visibleContracts.length ? visibleContracts.map(contract => renderContract(state, contract)).join('') : '<p class="empty-copy">No contracts match this view.</p>'}</div></section>`;
 }
 
 function renderContract(state, contract) {
   const unlocked = isContractUnlocked(state, contract);
-  const requirements = contractUnlockRequirements(contract);
   const idleHeroes = unlocked ? state.heroes.filter(hero => hero.status === 'idle') : [];
   const rankedHeroes = [...idleHeroes].sort((left, right) => calculateSuccessChance(heroTotalPower(right), contract.requiredPower) - calculateSuccessChance(heroTotalPower(left), contract.requiredPower));
-  const options = rankedHeroes.map((hero, index) => { const chance = calculateSuccessChance(heroTotalPower(hero), contract.requiredPower); return `<button data-action="startContract" data-hero-id="${escapeHtml(hero.id)}" data-contract-id="${escapeHtml(contract.id)}">${escapeHtml(hero.name)} (${chance}%${index === 0 && rankedHeroes.length > 1 ? ' • Best fit' : ''})</button>`; }).join('');
-  const actionCopy = unlocked ? options || '<span class="blocked-copy">No idle heroes. Wait for an active contract or recruit another hero.</span>' : `<span class="blocked-copy">${escapeHtml(contractUnlockProgress(state, contract))}</span>`;
-  return `<article class="card ${unlocked ? '' : 'locked-card'}"><div class="card-title-row"><div><h3>${escapeHtml(contract.name)}</h3><p>${escapeHtml(contract.tier)} • ${escapeHtml(contract.region || 'frontier')} • ${contract.durationSeconds}s</p></div><span class="badge">${contract.requiredPower} power</span></div><p>${escapeHtml(contract.description || 'A guild contract awaits.')}</p><p>Success: +${contract.rewardGold}g / +${contract.rewardReputation} rep • Failure: +${contract.failureGold}g</p><p class="mini-record">Threat: ${escapeHtml(contract.enemy || 'Unknown')} • Materials: +${contract.rewardMaterials || 0}${contract.rewardItem ? ` • Item: ${escapeHtml(catalogItem(contract.rewardItem)?.name || contract.rewardItem)}` : ''}</p><div class="button-row">${actionCopy}</div></article>`;
+  const options = rankedHeroes.map((hero, index) => { const chance = calculateSuccessChance(heroTotalPower(hero), contract.requiredPower); return `<button data-action="startContract" data-hero-id="${escapeHtml(hero.id)}" data-contract-id="${escapeHtml(contract.id)}" ${index === 0 ? 'class="recommended-action"' : ''}>${index === 0 ? 'Assign ' : ''}${escapeHtml(hero.name)} (${chance}%${index === 0 && rankedHeroes.length > 1 ? ' • Best fit' : ''})</button>`; }).join('');
+  const actionCopy = unlocked ? options || '<span class="blocked-copy">No idle heroes. Wait for an active contract or recruit another hero.</span>' : `<span class="blocked-copy">${escapeHtml(contractUnlockProgress(state, contract))}</span><details class="requirements-details"><summary>Show unlock path</summary>${renderContractRequirements(state, contract)}</details>`;
+  return `<article class="card ${unlocked ? '' : 'locked-card'}"><div class="card-title-row"><div><h3>${escapeHtml(contract.name)}</h3><p>${escapeHtml(contract.tier)} • ${escapeHtml(contract.region || 'frontier')} • ${formatDuration(contract.durationSeconds)}</p></div><span class="badge">${contract.requiredPower} power</span></div><p>${escapeHtml(contract.description || 'A guild contract awaits.')}</p><p>Success: +${contract.rewardGold}g / +${contract.rewardReputation} rep • Failure: +${contract.failureGold}g</p><p class="mini-record">Threat: ${escapeHtml(contract.enemy || 'Unknown')} • Materials: +${contract.rewardMaterials || 0}${contract.rewardItem ? ` • Item: ${escapeHtml(catalogItem(contract.rewardItem)?.name || contract.rewardItem)}` : ''}</p><div class="button-row">${actionCopy}</div></article>`;
 }
 
 function renderActivePanel(state) {
@@ -202,6 +228,145 @@ function bindActions(root, actions) {
     else if (action === 'saveGame') actions.saveGame();
     else if (action === 'resetGame') actions.resetGame();
   }));
+  bindUiActions(root, actions);
+}
+
+function bindUiActions(root, actions) {
+  root.querySelectorAll('[data-ui-action]').forEach(control => control.addEventListener('click', () => {
+    const action = control.dataset.uiAction;
+    if (action === 'toggleNotifications') notificationsOpen = !notificationsOpen;
+    else if (action === 'markNotificationsRead') updatePreferences(preferences => { preferences.notificationsReadAt = Date.now(); });
+    else if (action === 'openLog') {
+      notificationsOpen = false;
+      const target = document.getElementById('guild-log');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.focus({ preventScroll: true });
+      }
+    }
+    actions.refresh();
+  }));
+
+  root.querySelectorAll('[data-ui-control]').forEach(control => control.addEventListener('change', () => {
+    updatePreferences(preferences => { preferences[control.dataset.uiControl] = control.value; });
+    actions.refresh();
+  }));
+}
+
+function decorateDashboard(root, actions, preferences) {
+  const panels = [...root.querySelectorAll('.panel[id]')];
+  panels.forEach(panel => {
+    const titleRow = [...panel.children].find(child => child.classList.contains('panel-title-row'));
+    if (!titleRow) return;
+    let body = [...panel.children].find(child => child.classList.contains('panel-body'));
+    if (!body) {
+      body = document.createElement('div');
+      body.className = 'panel-body';
+      [...panel.children].filter(child => child !== titleRow).forEach(child => body.append(child));
+      panel.append(body);
+    }
+
+    const collapsed = preferences.collapsedPanels.includes(panel.id);
+    const pinned = preferences.pinnedPanels.includes(panel.id);
+    panel.classList.toggle('is-collapsed', collapsed);
+    panel.classList.toggle('is-pinned', pinned);
+    body.hidden = collapsed;
+
+    const controls = document.createElement('div');
+    controls.className = 'qol-panel-controls';
+    controls.innerHTML = `<button type="button" class="panel-pin" data-ui-panel-action="pin" aria-pressed="${pinned}" aria-label="${pinned ? 'Unpin' : 'Pin'} ${escapeHtml(panel.id)}" title="${pinned ? 'Unpin section' : 'Pin section'}">${pinned ? '★' : '☆'}</button><button type="button" class="panel-collapse" data-ui-panel-action="collapse" aria-expanded="${!collapsed}" aria-label="${collapsed ? 'Expand' : 'Collapse'} ${escapeHtml(panel.id)}" title="${collapsed ? 'Expand section' : 'Collapse section'}">${collapsed ? '＋' : '−'}</button><a class="panel-top-link" href="#page-top">Top</a>`;
+    titleRow.append(controls);
+
+    controls.querySelector('[data-ui-panel-action="pin"]').addEventListener('click', () => {
+      updatePreferences(current => {
+        current.pinnedPanels = current.pinnedPanels.includes(panel.id) ? current.pinnedPanels.filter(id => id !== panel.id) : [...current.pinnedPanels, panel.id];
+      });
+      const nextPinned = !panel.classList.contains('is-pinned');
+      panel.classList.toggle('is-pinned', nextPinned);
+      const pinButton = controls.querySelector('[data-ui-panel-action="pin"]');
+      pinButton.setAttribute('aria-pressed', String(nextPinned));
+      pinButton.setAttribute('aria-label', `${nextPinned ? 'Unpin' : 'Pin'} ${panel.id}`);
+      pinButton.title = nextPinned ? 'Unpin section' : 'Pin section';
+      pinButton.textContent = nextPinned ? '★' : '☆';
+    });
+
+    controls.querySelector('[data-ui-panel-action="collapse"]').addEventListener('click', () => {
+      const nextCollapsed = !panel.classList.contains('is-collapsed');
+      updatePreferences(current => {
+        current.collapsedPanels = nextCollapsed ? [...new Set([...current.collapsedPanels, panel.id])] : current.collapsedPanels.filter(id => id !== panel.id);
+      });
+      panel.classList.toggle('is-collapsed', nextCollapsed);
+      body.hidden = nextCollapsed;
+      const collapseButton = controls.querySelector('[data-ui-panel-action="collapse"]');
+      collapseButton.setAttribute('aria-expanded', String(!nextCollapsed));
+      collapseButton.setAttribute('aria-label', `${nextCollapsed ? 'Expand' : 'Collapse'} ${panel.id}`);
+      collapseButton.title = nextCollapsed ? 'Expand section' : 'Collapse section';
+      collapseButton.textContent = nextCollapsed ? '＋' : '−';
+    });
+  });
+
+  root.querySelectorAll('[data-ui-panel-action]').forEach(control => {
+    if (control.dataset.uiPanelBound === 'true') return;
+    control.dataset.uiPanelBound = 'true';
+  });
+}
+
+function filterHeroes(heroes, filter) {
+  if (filter === 'idle') return heroes.filter(hero => hero.status === 'idle');
+  if (filter === 'deployed') return heroes.filter(hero => hero.status === 'on_contract');
+  if (filter === 'injured') return heroes.filter(hero => (hero.injuries || []).length > 0);
+  return heroes;
+}
+
+function sortHeroes(heroes, sort) {
+  return [...heroes].sort((left, right) => {
+    if (sort === 'name') return left.name.localeCompare(right.name);
+    if (sort === 'level') return right.level - left.level || heroTotalPower(right) - heroTotalPower(left);
+    if (sort === 'morale') return (right.morale || 0) - (left.morale || 0);
+    if (sort === 'power') return heroTotalPower(right) - heroTotalPower(left);
+    return Number(right.status === 'idle') - Number(left.status === 'idle') || heroTotalPower(right) - heroTotalPower(left);
+  });
+}
+
+function filterContracts(state, filter) {
+  if (filter === 'available') return CONTRACTS.filter(contract => isContractUnlocked(state, contract));
+  if (filter === 'locked') return CONTRACTS.filter(contract => !isContractUnlocked(state, contract));
+  if (filter === 'boss') return CONTRACTS.filter(contract => contract.boss);
+  return CONTRACTS;
+}
+
+function sortContracts(contracts, sort, gameState) {
+  return [...contracts].sort((left, right) => {
+    if (sort === 'reward') return right.rewardGold - left.rewardGold;
+    if (sort === 'power') return left.requiredPower - right.requiredPower;
+    if (sort === 'duration') return left.durationSeconds - right.durationSeconds;
+    return Number(isContractUnlocked(gameState, right)) - Number(isContractUnlocked(gameState, left)) || left.requiredPower - right.requiredPower;
+  });
+}
+
+function renderContractRequirements(state, contract) {
+  const requirements = contractUnlockRequirements(contract);
+  const checks = [
+    [`Guild level ${requirements.minGuildLevel}`, state.guild.level >= requirements.minGuildLevel],
+    [`Reputation ${requirements.minReputation}`, state.guild.reputation >= requirements.minReputation]
+  ];
+  if (contract.region) checks.push([`${contract.region.replaceAll('-', ' ')} region`, state.regions?.unlocked?.includes(contract.region)]);
+  if (contract.tier === 'Legendary') checks.push(['Legend-Seeking research', state.research?.includes('legend-seeking')]);
+  return `<ul class="requirements-list">${checks.map(([label, met]) => `<li class="${met ? 'requirement-met' : 'requirement-missing'}"><span aria-hidden="true">${met ? '✓' : '○'}</span>${escapeHtml(label)}</li>`).join('')}</ul>`;
+}
+
+function formatDuration(seconds) {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m${seconds % 60 ? ` ${seconds % 60}s` : ''}`;
+}
+
+function formatRelativeTime(timestamp) {
+  const seconds = Math.max(0, Math.floor((Date.now() - Number(timestamp || Date.now())) / 1000));
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
 }
 
 function renderNextUnlock(state, contract) { const requirements = contractUnlockRequirements(contract); return `Next unlock: ${contract.name}. Guild level: ${state.guild.level} / ${requirements.minGuildLevel}. Reputation: ${state.guild.reputation} / ${requirements.minReputation}.`; }

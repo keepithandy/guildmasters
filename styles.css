@@ -774,3 +774,329 @@ body.quick-nav-open .quick-nav-backdrop {
     scroll-margin-top: 1rem;
   }
 }
+
+/* v2.0 release-candidate QoL layer */
+#app > .command-bar,
+#app > .status-banner {
+  grid-column: 1 / -1;
+}
+
+#app > .command-bar { order: -3; }
+#app > .status-banner { order: -2; }
+.panel.is-pinned { order: -1; }
+
+.command-bar {
+  align-items: center;
+  background: linear-gradient(135deg, rgba(55, 42, 26, 0.98), rgba(32, 25, 17, 0.98));
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: minmax(145px, 0.8fr) minmax(250px, 1.4fr) auto;
+  padding: 0.52rem 0.62rem;
+  position: sticky;
+  top: 0.65rem;
+  z-index: 30;
+}
+
+.command-bar-heading {
+  min-width: 0;
+}
+
+.command-bar-heading strong {
+  display: block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+}
+
+.command-bar-heading span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.68rem;
+  margin-top: 0.08rem;
+  overflow-wrap: anywhere;
+}
+
+.command-resources {
+  display: grid;
+  gap: 0.3rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.command-resources span {
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  padding: 0.24rem 0.34rem;
+}
+
+.command-resources strong {
+  color: var(--text);
+  display: block;
+  font-size: 0.79rem;
+}
+
+.command-bar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.command-bar-actions button,
+.command-bar-actions select {
+  min-height: 32px;
+}
+
+.secondary-action,
+.text-action {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--line-soft);
+  color: var(--text);
+}
+
+.notification-trigger {
+  gap: 0.32rem;
+}
+
+.notification-count {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.62rem;
+  height: 1.1rem;
+  justify-content: center;
+  min-width: 1.1rem;
+  padding: 0 0.2rem;
+}
+
+.notification-count.has-unread {
+  background: var(--accent-strong);
+  color: #20170d;
+}
+
+.density-control,
+.qol-toolbar label {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 0.67rem;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+select {
+  background: #1a140f;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  min-height: 30px;
+  padding: 0.2rem 0.32rem;
+}
+
+.notification-center {
+  background: #1c150e;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  grid-column: 1 / -1;
+  max-height: 18rem;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.notification-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.notification-center ul {
+  list-style: none;
+  margin: 0.35rem 0;
+  padding: 0;
+}
+
+.notification-center li {
+  align-items: baseline;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+}
+
+.notification-center li span {
+  color: var(--muted);
+  min-width: 0;
+}
+
+.notification-center li small {
+  color: var(--accent-strong);
+  flex: 0 0 auto;
+  font-size: 0.62rem;
+}
+
+.text-action {
+  border: 0;
+  font-size: 0.68rem;
+  min-height: 28px;
+  padding: 0.22rem 0.38rem;
+}
+
+.qol-toolbar {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.45rem 0;
+  padding: 0.35rem;
+}
+
+.qol-panel-controls {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.18rem;
+  margin-left: auto;
+}
+
+.qol-panel-controls button,
+.panel-top-link {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 0.65rem;
+  justify-content: center;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0.18rem 0.3rem;
+  text-decoration: none;
+}
+
+.qol-panel-controls button:hover:not(:disabled),
+.qol-panel-controls button:focus-visible:not(:disabled),
+.panel-top-link:hover,
+.panel-top-link:focus-visible {
+  background: rgba(215, 168, 79, 0.14);
+  color: var(--accent-strong);
+  filter: none;
+  outline: 2px solid rgba(240, 198, 109, 0.4);
+  outline-offset: 1px;
+}
+
+.panel.is-pinned {
+  border-color: var(--accent-strong);
+}
+
+.section-count {
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.recommended-action {
+  box-shadow: inset 0 0 0 1px rgba(255, 248, 204, 0.34);
+}
+
+.requirements-details {
+  margin-top: 0.3rem;
+}
+
+.requirements-details summary {
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.requirements-list {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+}
+
+.requirements-list li {
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
+}
+
+.requirements-list li span {
+  display: inline-block;
+  margin-right: 0.28rem;
+  width: 0.8rem;
+}
+
+.requirement-met { color: #bfe8b5; }
+.requirement-missing { color: #f1c1a9; }
+
+#app[data-density="compact"] {
+  gap: 0.35rem;
+}
+
+#app[data-density="compact"] .panel,
+#app[data-density="compact"] .card {
+  padding: 0.38rem;
+}
+
+#app[data-density="compact"] .card-list {
+  gap: 0.3rem;
+}
+
+@media (max-width: 1279px) {
+  .command-bar {
+    top: 4rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .command-bar {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .command-bar-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .command-bar-actions > button,
+  .density-control select {
+    width: 100%;
+  }
+
+  .density-control {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+
+  .notification-center li {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.08rem;
+  }
+
+  .qol-panel-controls {
+    margin-left: 0;
+  }
+
+  .qol-panel-controls button,
+  .panel-top-link {
+    min-height: 36px;
+    min-width: 36px;
+  }
+}
