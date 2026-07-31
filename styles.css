@@ -203,6 +203,65 @@ p {
   margin-top: 0.16rem;
 }
 
+.eyebrow {
+  color: var(--accent-strong);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.15rem;
+  text-transform: uppercase;
+}
+
+.card-title-row {
+  align-items: start;
+  display: flex;
+  gap: 0.4rem;
+  justify-content: space-between;
+}
+
+.card-title-row h3,
+.card-title-row p {
+  min-width: 0;
+}
+
+.card-title-row p {
+  margin-bottom: 0;
+}
+
+.badge {
+  background: rgba(215, 168, 79, 0.14);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  padding: 0.14rem 0.38rem;
+  white-space: nowrap;
+}
+
+.badge.good { color: #bfe8b5; border-color: #4e7f4c; }
+.badge.busy { color: #f2c986; }
+.mini-record { font-size: 0.72rem; }
+.inline-actions { margin-top: 0; }
+.compact-actions { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.subsection + .subsection { border-top: 1px solid var(--line-soft); margin-top: 0.6rem; padding-top: 0.6rem; }
+.locked-card { opacity: 0.78; }
+.progress-track { background: rgba(0, 0, 0, 0.28); border-radius: 999px; height: 0.35rem; overflow: hidden; }
+.progress-track span { background: var(--accent); display: block; height: 100%; transition: width 0.2s ease; }
+.inventory-chip { background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line-soft); border-radius: 999px; display: inline-block; margin: 0 0.2rem 0.2rem 0; padding: 0.2rem 0.38rem; }
+.event-card { border-color: var(--accent); }
+
+@media (min-width: 680px) {
+  #app { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .guild-panel, .event-panel, .guild-log-panel, .records-panel { grid-column: 1 / -1; }
+  .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1100px) {
+  #app { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .guild-panel, .event-panel, .guild-log-panel, .records-panel { grid-column: 1 / -1; }
+}
+
 @media (max-width: 420px) {
   body {
     font-size: 0.78rem;
