@@ -12,6 +12,8 @@ npm run smoke:all
 
 The v1.0 suite covers room upgrades, class skills and traits, expanded contract tiers, legendary loot, region exploration, research, staff hiring, crafting, daily progression, records, and v1.0 save repair. The v0.2 suite remains in place to protect the original reload timing, duplicate assignment, deterministic resolution, unlock copy, and mobile accessibility contracts.
 
+The v1.2 suite additionally covers multi-round combat transcripts, temporary status effects, hero bonds, achievements, and their save-repair guarantees.
+
 ### v1.0 Manual Feature Pass
 
 1. Confirm the command panel shows day, identity, mode, materials, research, influence, and prestige.

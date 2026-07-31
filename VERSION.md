@@ -1,14 +1,21 @@
 # Version
 
-Current version: v1.1.0
+Current version: v1.2.0
 
-Current phase: campaign and expedition depth
+Current phase: combat, relationships, and achievement depth
 
 Current target: continue authored content and presentation polish without weakening the v1.0 reliability contracts
 
-Package version: `1.1.0`.
+Package version: `1.2.0`.
 
-Save-state schema version: `3`. Product metadata stored in current saves is `1.1.0`.
+Save-state schema version: `4`. Product metadata stored in current saves is `1.2.0`.
+
+## v1.2.0
+
+- Added multi-round tactical encounters with class abilities, temporary status effects, enemy counters, combat transcripts, and persistent combat history.
+- Added hero relationship moments with bond strength, morale rewards, and relationship save repair.
+- Added achievements for tactical victories, campaign progress, rival wins, and hero bonds.
+- Added v1.2 smoke coverage and updated the complete smoke command.
 
 ## v1.1.0
 

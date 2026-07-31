@@ -43,6 +43,7 @@ export function recruitHero(state, random = Math.random, now = Date.now()) {
     skills: [...archetype.skills],
     equipment: { weapon: '', offhand: '', armor: '', charm: '' },
     injuries: [],
+    statusEffects: [],
     relationships: {},
     personalGoal: `Become the guild's most reliable ${archetype.name.toLowerCase()}.`
   };

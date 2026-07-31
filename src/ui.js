@@ -1,7 +1,7 @@
 import { CONTRACTS, activeContractDetails, calculateSuccessChance, contractUnlockProgress, contractUnlockRequirements, isContractUnlocked, nextContractUnlock } from './contracts.js';
 import { canUpgradeGuild, guildUpgradeBlockedReason, guildUpgradeCost, canUpgradeRoom, roomUpgradeCost } from './guild.js';
 import { canRecruitHero, heroTotalPower, RECRUIT_COST, recruitPowerBonus, recruitmentBlockedReason } from './heroes.js';
-import { CAMPAIGN_CHAPTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, TACTICAL_DRILLS, catalogChapter, catalogEvent, catalogItem } from './content.js';
+import { ACHIEVEMENT_CATALOG, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, catalogChapter, catalogEvent, catalogItem } from './content.js';
 
 export function render(state, actions) {
   const root = document.getElementById('app');
@@ -23,6 +23,8 @@ export function render(state, actions) {
     ${renderFactionPanel(state)}
     ${renderRivalPanel(state)}
     ${renderTacticalPanel(state)}
+    ${renderRelationshipPanel(state)}
+    ${renderAchievementPanel(state)}
     ${renderProgressionPanel(state)}
     ${renderArmoryPanel(state)}
     ${renderRecordsPanel(state)}
@@ -78,7 +80,7 @@ function renderHero(state, hero) {
   const equipment = Object.entries(hero.equipment || {}).filter(([, id]) => id).map(([slot, id]) => `${slot}: ${catalogItem(id)?.name || id}`).join(' • ') || 'No equipment equipped';
   const compatibleItems = ITEM_CATALOG.filter(item => item.className === hero.className && state.inventory.some(entry => entry.itemId === item.id && entry.quantity > 0));
   return `<article class="card hero-card"><div class="card-title-row"><div><h3>${escapeHtml(hero.name)}</h3><p>${escapeHtml(hero.className)} • Level ${hero.level} • ${heroTotalPower(hero)} power</p></div><span class="badge ${hero.status === 'idle' ? 'good' : 'busy'}">${hero.status === 'idle' ? 'Idle' : 'On Contract'}</span></div>
-    <p>Morale ${hero.morale || 75}% • Traits: ${escapeHtml((hero.traits || []).join(', ') || 'Unproven')}</p><p>Skills: ${escapeHtml((hero.skills || []).join(', ') || 'Learning the trade')}</p><p>Gear: ${escapeHtml(equipment)}</p><p class="mini-record">Goal: ${escapeHtml(hero.personalGoal || 'Become a guild veteran.')}${hero.injuries?.length ? ` • Injuries: ${escapeHtml(hero.injuries.join(', '))}` : ''}</p>
+    <p>Morale ${hero.morale || 75}% • Traits: ${escapeHtml((hero.traits || []).join(', ') || 'Unproven')}</p><p>Skills: ${escapeHtml((hero.skills || []).join(', ') || 'Learning the trade')}${hero.statusEffects?.length ? ` • Effects: ${escapeHtml(hero.statusEffects.join(', '))}` : ''}</p><p>Gear: ${escapeHtml(equipment)}</p><p class="mini-record">Goal: ${escapeHtml(hero.personalGoal || 'Become a guild veteran.')}${hero.injuries?.length ? ` • Injuries: ${escapeHtml(hero.injuries.join(', '))}` : ''}</p>
     <div class="button-row"><button data-action="trainHero" data-hero-id="${escapeHtml(hero.id)}" ${hero.status === 'idle' ? '' : 'disabled'}>Train Hero</button>${compatibleItems.map(item => `<button data-action="equipItem" data-hero-id="${escapeHtml(hero.id)}" data-item-id="${escapeHtml(item.id)}">Equip ${escapeHtml(item.name)}</button>`).join('')}</div>
   </article>`;
 }
@@ -127,7 +129,18 @@ function renderRivalPanel(state) {
 
 function renderTacticalPanel(state) {
   const idleCount = state.heroes.filter(hero => hero.status === 'idle').length;
-  return `<section class="panel tactical-panel"><div class="panel-title-row"><div><p class="eyebrow">Expedition preparation</p><h2>Tactical Drills</h2></div><span class="badge">${state.tactical.encountersWon} wins</span></div><p class="helper-text">Drills use all idle heroes as a temporary party. Enemy weaknesses reward the right class and raise morale without consuming a contract slot.</p><div class="card-list">${TACTICAL_DRILLS.map(drill => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(drill.name)}</h3><span class="badge">${drill.requiredPower} power</span></div><p>Enemy: ${escapeHtml(drill.enemy)} • Reward: ${drill.rewardGold}g and ${drill.rewardMaterials} materials.</p><button data-action="runTacticalDrill" data-drill-id="${escapeHtml(drill.id)}" ${idleCount === 0 ? 'disabled' : ''}>Run with ${idleCount} idle hero${idleCount === 1 ? '' : 'es'}</button></article>`).join('')}</div></section>`;
+  const last = state.combat?.lastEncounter;
+  return `<section class="panel tactical-panel"><div class="panel-title-row"><div><p class="eyebrow">Expedition preparation</p><h2>Tactical Encounters</h2></div><span class="badge">${state.tactical.encountersWon} wins</span></div><p class="helper-text">Multi-round encounters use all idle heroes as a temporary party. Class abilities create guards, marks, burns, taunts, and evasive openings.</p>${last ? `<p class="mini-record">Last encounter: ${escapeHtml(last.name)} • ${escapeHtml(last.result)} in ${last.rounds} rounds.</p>` : ''}<div class="card-list">${COMBAT_ENCOUNTERS.map(encounter => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(encounter.name)}</h3><span class="badge">${encounter.enemyHp} HP</span></div><p>Enemy: ${escapeHtml(encounter.enemy)} • ${encounter.rounds} rounds • Reward: ${encounter.rewardGold}g and ${encounter.rewardMaterials} materials.</p><button data-action="runTacticalDrill" data-drill-id="${escapeHtml(encounter.id)}" ${idleCount === 0 ? 'disabled' : ''}>Run with ${idleCount} idle hero${idleCount === 1 ? '' : 'es'}</button></article>`).join('')}</div></section>`;
+}
+
+function renderRelationshipPanel(state) {
+  const pairs = [];
+  for (let first = 0; first < state.heroes.length; first += 1) for (let second = first + 1; second < state.heroes.length; second += 1) pairs.push([state.heroes[first], state.heroes[second]]);
+  return `<section class="panel relationship-panel"><div class="panel-title-row"><div><p class="eyebrow">Hero stories</p><h2>Relationships</h2></div><span class="badge">${state.relationshipEvents.length} moments</span></div>${pairs.length ? `<div class="card-list">${pairs.map(([first, second]) => { const bond = first.relationships?.[second.id] || 0; return `<article class="card"><h3>${escapeHtml(first.name)} & ${escapeHtml(second.name)}</h3><p>Bond strength: ${bond}/100</p><button data-action="bondHeroes" data-first-hero-id="${escapeHtml(first.id)}" data-second-hero-id="${escapeHtml(second.id)}" ${first.status !== 'idle' || second.status !== 'idle' ? 'disabled' : ''}>Create shared moment</button></article>`; }).join('')}</div>` : '<p class="empty-copy">Recruit two heroes to begin their personal stories.</p>'}</section>`;
+}
+
+function renderAchievementPanel(state) {
+  return `<section class="panel achievement-panel"><div class="panel-title-row"><div><p class="eyebrow">Milestones</p><h2>Achievements</h2></div><span class="badge">${state.achievements.length}/${ACHIEVEMENT_CATALOG.length}</span></div><div class="card-list">${ACHIEVEMENT_CATALOG.map(achievement => `<article class="card ${state.achievements.includes(achievement.id) ? 'achievement-complete' : ''}"><div class="card-title-row"><h3>${escapeHtml(achievement.name)}</h3><span class="badge">${state.achievements.includes(achievement.id) ? 'Earned' : 'Locked'}</span></div><p>${escapeHtml(achievement.description)}</p></article>`).join('')}</div></section>`;
 }
 
 function renderProgressionPanel(state) {
@@ -169,6 +182,7 @@ function bindActions(root, actions) {
     else if (action === 'advanceCampaign') actions.advanceCampaign();
     else if (action === 'challengeRival') actions.challengeRival(button.dataset.rivalId);
     else if (action === 'runTacticalDrill') actions.runTacticalDrill(button.dataset.drillId);
+    else if (action === 'bondHeroes') actions.bondHeroes(button.dataset.firstHeroId, button.dataset.secondHeroId);
     else if (action === 'recruitHero') actions.recruitHero();
     else if (action === 'saveGame') actions.saveGame();
     else if (action === 'resetGame') actions.resetGame();

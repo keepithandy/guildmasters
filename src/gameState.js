@@ -1,5 +1,5 @@
-export const GAME_VERSION = '1.1.0';
-export const SAVE_SCHEMA_VERSION = 3;
+export const GAME_VERSION = '1.2.0';
+export const SAVE_SCHEMA_VERSION = 4;
 export const MAX_LOG_ENTRIES = 80;
 
 export function createNewGameState(now = Date.now()) {
@@ -44,6 +44,9 @@ export function createNewGameState(now = Date.now()) {
     campaign: { chaptersCompleted: [], activeChapter: 'small-beginning' },
     rivals: {},
     tactical: { drillsCompleted: 0, encountersWon: 0, encountersLost: 0 },
+    combat: { victories: 0, defeats: 0, rounds: 0, lastEncounter: null },
+    achievements: [],
+    relationshipEvents: [],
     offlineSummary: { elapsedSeconds: 0, resolvedContracts: 0, returnedAt: now },
     flags: {},
     log: [{ id: 'log-founded', timestamp: now, message: 'Guild founded. Recruit your first hero.' }],
@@ -93,6 +96,9 @@ export function repairGameState(input, now = Date.now()) {
     campaign: repairCampaign(input.campaign),
     rivals: repairRivals(input.rivals),
     tactical: repairTactical(input.tactical),
+    combat: repairCombat(input.combat),
+    achievements: repairStringList(input.achievements),
+    relationshipEvents: repairRelationshipEvents(input.relationshipEvents),
     offlineSummary: repairOfflineSummary(input.offlineSummary, now),
     flags: input.flags && typeof input.flags === 'object' ? { ...input.flags } : {},
     log: repairLog(input.log, fallback.log),
@@ -162,7 +168,8 @@ function repairHero(hero, index) {
     skills: Array.isArray(hero.skills) ? hero.skills.filter(item => typeof item === 'string').slice(0, 8) : [],
     equipment: { weapon: safeText(equipment.weapon, ''), offhand: safeText(equipment.offhand, ''), armor: safeText(equipment.armor, ''), charm: safeText(equipment.charm, '') },
     injuries: Array.isArray(hero.injuries) ? hero.injuries.filter(item => typeof item === 'string').slice(0, 3) : [],
-    relationships: hero.relationships && typeof hero.relationships === 'object' ? { ...hero.relationships } : {},
+    statusEffects: Array.isArray(hero.statusEffects) ? hero.statusEffects.filter(item => typeof item === 'string').slice(0, 4) : [],
+    relationships: repairHeroRelationships(hero.relationships),
     personalGoal: safeText(hero.personalGoal, 'Become a respected guild veteran.')
   };
 }
@@ -251,6 +258,30 @@ function repairRivals(value) {
 function repairTactical(value) {
   const tactical = value && typeof value === 'object' ? value : {};
   return { drillsCompleted: nonNegativeNumber(tactical.drillsCompleted, 0), encountersWon: nonNegativeNumber(tactical.encountersWon, 0), encountersLost: nonNegativeNumber(tactical.encountersLost, 0) };
+}
+
+function repairCombat(value) {
+  const combat = value && typeof value === 'object' ? value : {};
+  const lastEncounter = combat.lastEncounter && typeof combat.lastEncounter === 'object' ? {
+    id: safeText(combat.lastEncounter.id, ''),
+    name: safeText(combat.lastEncounter.name, 'Expedition'),
+    result: safeText(combat.lastEncounter.result, 'unknown'),
+    rounds: positiveInt(combat.lastEncounter.rounds, 1),
+    transcript: Array.isArray(combat.lastEncounter.transcript) ? combat.lastEncounter.transcript.filter(item => typeof item === 'string').slice(-12) : []
+  } : null;
+  return { victories: nonNegativeNumber(combat.victories, 0), defeats: nonNegativeNumber(combat.defeats, 0), rounds: nonNegativeNumber(combat.rounds, 0), lastEncounter };
+}
+
+function repairRelationshipEvents(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(item => item && typeof item === 'object').slice(0, 8).map(item => ({ id: safeText(item.id, ''), heroIds: Array.isArray(item.heroIds) ? item.heroIds.filter(id => typeof id === 'string').slice(0, 2) : [], eventId: safeText(item.eventId, 'campfire'), createdDay: positiveInt(item.createdDay, 1) }));
+}
+
+function repairHeroRelationships(value) {
+  const relationships = value && typeof value === 'object' ? value : {};
+  const repaired = {};
+  for (const [id, score] of Object.entries(relationships)) repaired[id] = Math.max(0, Math.min(100, Number(score) || 0));
+  return repaired;
 }
 
 function repairOfflineSummary(value, now) {

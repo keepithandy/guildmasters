@@ -1,5 +1,5 @@
 import { appendLog, updateRecord } from './gameState.js';
-import { CAMPAIGN_CHAPTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, catalogChapter, catalogDrill, catalogEvent, catalogRegion, catalogResearch, catalogRival, catalogStaff } from './content.js';
+import { ACHIEVEMENT_CATALOG, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RELATIONSHIP_EVENTS, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, catalogAchievement, catalogChapter, catalogEncounter, catalogEvent, catalogRegion, catalogResearch, catalogRelationshipEvent, catalogRival, catalogStaff } from './content.js';
 import { addInventory, findHero, heroTotalPower, trainHero } from './heroes.js';
 import { buyItem, upgradeRoom } from './guild.js';
 
@@ -112,6 +112,8 @@ export function advanceCampaign(state, now = Date.now()) {
     state.guild.reputation += chapter.rewardReputation;
     const next = CAMPAIGN_CHAPTERS.find(candidate => !state.campaign.chaptersCompleted.includes(candidate.id));
     state.campaign.activeChapter = next?.id || chapter.id;
+    if (state.campaign.chaptersCompleted.length >= 3) awardAchievement(state, 'chapter-keeper', now);
+    if (chapter.id === 'final-expedition') awardAchievement(state, 'legendary-guild', now);
     return setSystemMessage(state, `${chapter.title} completed. +${chapter.rewardGold} gold and +${chapter.rewardReputation} reputation.`, now);
   }
   return state;
@@ -131,6 +133,7 @@ export function challengeRival(state, rivalId, now = Date.now()) {
     state.guild.gold += rival.rewardGold;
     state.guild.reputation += rival.rewardReputation;
     state.guild.prestige += 2;
+    awardAchievement(state, 'rival-breaker', now);
     return setSystemMessage(state, `Rival challenge won against ${rival.name}. +${rival.rewardGold} gold and +${rival.rewardReputation} reputation.`, now);
   }
   state.rivals[rivalId].defeats += 1;
@@ -139,25 +142,85 @@ export function challengeRival(state, rivalId, now = Date.now()) {
 }
 
 export function runTacticalDrill(state, drillId, heroIds = [], now = Date.now()) {
-  const drill = catalogDrill(drillId);
+  return runCombatEncounter(state, drillId, heroIds, now);
+}
+
+export function runCombatEncounter(state, encounterId, heroIds = [], now = Date.now()) {
+  const encounter = catalogEncounter(encounterId);
   const party = heroIds.map(heroId => findHero(state, heroId)).filter(Boolean).filter(hero => hero.status === 'idle');
-  if (!drill) return state;
+  if (!encounter) return state;
   if (!party.length) return setSystemMessage(state, 'Choose at least one idle hero for the tactical drill.', now);
-  const partyPower = party.reduce((total, hero) => total + heroTotalPower(hero), 0);
-  const weaknessBonus = party.some(hero => hero.className === weaknessFor(drill.enemy)) ? 10 : 0;
-  const success = partyPower + weaknessBonus >= drill.requiredPower;
+  const weaknessClass = weaknessFor(encounter.enemy);
+  let enemyHp = encounter.enemyHp;
+  let rounds = 0;
+  let stunned = false;
+  let marked = false;
+  const transcript = [];
   state.tactical.drillsCompleted += 1;
+  for (let round = 1; round <= encounter.rounds && enemyHp > 0; round += 1) {
+    rounds = round;
+    let roundDamage = 0;
+    for (const hero of party) {
+      const power = heroTotalPower(hero);
+      let damage = Math.max(2, Math.floor(power * 0.22));
+      if (hero.className === weaknessClass) damage += 6;
+      if (hero.className === 'Warrior') { hero.statusEffects = ['guarding']; damage += 2; }
+      if (hero.className === 'Ranger') { marked = true; hero.statusEffects = ['marked-target']; damage += 3; }
+      if (hero.className === 'Mage') { hero.statusEffects = ['burning']; damage += 5; }
+      if (hero.className === 'Guardian') { stunned = round % 2 === 1; hero.statusEffects = ['taunting']; damage += 1; }
+      if (hero.className === 'Rogue') { hero.statusEffects = ['evasive']; damage += round === 1 ? 8 : 2; }
+      roundDamage += damage;
+    }
+    if (marked) roundDamage += 3;
+    enemyHp = Math.max(0, enemyHp - roundDamage);
+    transcript.push(`Round ${round}: the party dealt ${roundDamage} damage${enemyHp === 0 ? ' and broke the enemy line.' : '.'}`);
+    if (enemyHp <= 0) break;
+    if (!stunned) {
+      const target = party[round % party.length];
+      const damage = Math.max(1, encounter.enemyAttack - (party.some(hero => hero.className === 'Guardian') ? 4 : 0));
+      target.morale = Math.max(0, (target.morale || 75) - 2);
+      if (encounter.enemy === 'spiders' && round === 2) target.statusEffects = ['poisoned'];
+      transcript.push(`Round ${round}: ${encounter.enemy} struck ${target.name} for ${damage} pressure.`);
+    } else {
+      transcript.push(`Round ${round}: the guardian’s taunt interrupted the enemy.`);
+    }
+    stunned = false;
+  }
+  const success = enemyHp <= 0;
+  state.combat.rounds += rounds;
+  state.combat.lastEncounter = { id: encounter.id, name: encounter.name, result: success ? 'victory' : 'defeat', rounds, transcript };
   if (success) {
     state.tactical.encountersWon += 1;
-    state.guild.gold += drill.rewardGold;
-    state.guild.materials += drill.rewardMaterials;
+    state.combat.victories += 1;
+    state.guild.gold += encounter.rewardGold;
+    state.guild.materials += encounter.rewardMaterials;
     state.guild.prestige += 1;
     party.forEach(hero => { hero.morale = Math.min(100, (hero.morale || 75) + 5); });
-    return setSystemMessage(state, `${drill.name} won. The party exploited the ${drill.enemy} weakness and earned rewards.`, now);
+    awardAchievement(state, 'first-blood', now);
+    if (state.tactical.encountersWon >= 5) awardAchievement(state, 'tactical-veteran', now);
+    party.forEach(hero => { hero.statusEffects = []; });
+    return setSystemMessage(state, `${encounter.name} won in ${rounds} rounds. The party exploited the ${weaknessClass} counter and earned rewards.`, now);
   }
   state.tactical.encountersLost += 1;
+  state.combat.defeats += 1;
   party.forEach(hero => { hero.morale = Math.max(0, (hero.morale || 75) - 4); });
-  return setSystemMessage(state, `${drill.name} lost. Study the enemy weakness and improve the party before trying again.`, now);
+  return setSystemMessage(state, `${encounter.name} lost after ${rounds} rounds. Study the enemy weakness and improve the party before trying again.`, now);
+}
+
+export function bondHeroes(state, firstHeroId, secondHeroId, now = Date.now()) {
+  const first = findHero(state, firstHeroId);
+  const second = findHero(state, secondHeroId);
+  if (!first || !second || first.id === second.id) return state;
+  if (first.status !== 'idle' || second.status !== 'idle') return setSystemMessage(state, 'Both heroes must be idle to build a relationship.', now);
+  const event = RELATIONSHIP_EVENTS[state.guild.day % RELATIONSHIP_EVENTS.length];
+  first.relationships[second.id] = Math.min(100, (first.relationships[second.id] || 0) + event.bond);
+  second.relationships[first.id] = Math.min(100, (second.relationships[first.id] || 0) + event.bond);
+  first.morale = Math.min(100, (first.morale || 75) + event.morale);
+  second.morale = Math.min(100, (second.morale || 75) + event.morale);
+  state.relationshipEvents.push({ id: `relationship-${now}`, heroIds: [first.id, second.id], eventId: event.id, createdDay: state.guild.day });
+  state.relationshipEvents = state.relationshipEvents.slice(-8);
+  awardAchievement(state, 'bond-forged', now);
+  return setSystemMessage(state, `${event.title}: ${first.name} and ${second.name} grew closer.`, now);
 }
 
 export function recordOfflineReturn(state, previousLastSeen, activeBefore, now = Date.now()) {
@@ -179,7 +242,7 @@ export function bootstrapFoundation(state, now = Date.now()) {
   return state;
 }
 
-export { CAMPAIGN_CHAPTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, buyItem, upgradeRoom };
+export { ACHIEVEMENT_CATALOG, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RELATIONSHIP_EVENTS, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, buyItem, upgradeRoom };
 
 function maybeCreateEvent(state, now) {
   if (state.events.length >= 2 || state.guild.day < 2) return;
@@ -192,3 +255,9 @@ function maybeCreateEvent(state, now) {
 
 function setSystemMessage(state, message, now) { state.statusMessage = message; appendLog(state, message, now); return state; }
 function weaknessFor(enemy) { return { goblins: 'Warrior', spiders: 'Mage', elementals: 'Rogue', undead: 'Cleric' }[enemy] || 'Ranger'; }
+function awardAchievement(state, achievementId, now) {
+  if (!catalogAchievement(achievementId) || state.achievements.includes(achievementId)) return state;
+  state.achievements.push(achievementId);
+  appendLog(state, `Achievement unlocked: ${catalogAchievement(achievementId).name}.`, now);
+  return state;
+}

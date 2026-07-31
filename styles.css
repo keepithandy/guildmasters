@@ -255,6 +255,7 @@ p {
 .chapter-pill.current { border-color: var(--accent); color: var(--accent-strong); }
 .chapter-pill.complete { border-color: #4e7f4c; color: #bfe8b5; }
 .offline-panel { border-color: var(--accent); }
+.achievement-complete { border-color: #4e7f4c; }
 
 @media (min-width: 680px) {
   #app { grid-template-columns: repeat(2, minmax(0, 1fr)); }

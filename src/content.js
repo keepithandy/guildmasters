@@ -102,6 +102,28 @@ export const TACTICAL_DRILLS = [
   { id: 'undead-vanguard', name: 'Undead Vanguard', enemy: 'undead', requiredPower: 120, rewardGold: 300, rewardMaterials: 10 }
 ];
 
+export const COMBAT_ENCOUNTERS = [
+  { id: 'goblin-skirmish', name: 'Goblin Skirmish', enemy: 'goblins', enemyHp: 36, enemyAttack: 7, requiredPower: 20, rounds: 4, rewardGold: 30, rewardMaterials: 1 },
+  { id: 'spider-ambush', name: 'Spider Ambush', enemy: 'spiders', enemyHp: 72, enemyAttack: 12, requiredPower: 42, rounds: 5, rewardGold: 75, rewardMaterials: 3 },
+  { id: 'elemental-breach', name: 'Elemental Breach', enemy: 'elementals', enemyHp: 130, enemyAttack: 18, requiredPower: 75, rounds: 6, rewardGold: 150, rewardMaterials: 6 },
+  { id: 'undead-vanguard', name: 'Undead Vanguard', enemy: 'undead', enemyHp: 220, enemyAttack: 25, requiredPower: 120, rounds: 7, rewardGold: 300, rewardMaterials: 10 }
+];
+
+export const ACHIEVEMENT_CATALOG = [
+  { id: 'first-blood', name: 'First Blood', description: 'Win your first tactical encounter.' },
+  { id: 'tactical-veteran', name: 'Tactical Veteran', description: 'Win five tactical encounters.' },
+  { id: 'rival-breaker', name: 'Rival Breaker', description: 'Defeat a rival guild.' },
+  { id: 'bond-forged', name: 'Bond Forged', description: 'Build a bond between two heroes.' },
+  { id: 'chapter-keeper', name: 'Chapter Keeper', description: 'Complete three campaign chapters.' },
+  { id: 'legendary-guild', name: 'Legendary Guild', description: 'Complete the final campaign chapter.' }
+];
+
+export const RELATIONSHIP_EVENTS = [
+  { id: 'campfire', title: 'Campfire Stories', description: 'Two heroes share stories after a hard day.', morale: 6, bond: 2 },
+  { id: 'sparring', title: 'Friendly Sparring', description: 'A controlled duel turns into a lesson in trust.', morale: 4, bond: 3 },
+  { id: 'shared-oath', title: 'A Shared Oath', description: 'The pair promise to watch each other’s backs.', morale: 8, bond: 4 }
+];
+
 export function catalogItem(id) { return ITEM_CATALOG.find(item => item.id === id) || null; }
 export function catalogRoom(id) { return ROOM_CATALOG.find(room => room.id === id) || null; }
 export function catalogFaction(id) { return FACTION_CATALOG.find(faction => faction.id === id) || null; }
@@ -112,3 +134,6 @@ export function catalogEvent(id) { return EVENT_CATALOG.find(event => event.id =
 export function catalogChapter(id) { return CAMPAIGN_CHAPTERS.find(chapter => chapter.id === id) || null; }
 export function catalogRival(id) { return RIVAL_GUILDS.find(rival => rival.id === id) || null; }
 export function catalogDrill(id) { return TACTICAL_DRILLS.find(drill => drill.id === id) || null; }
+export function catalogEncounter(id) { return COMBAT_ENCOUNTERS.find(encounter => encounter.id === id) || null; }
+export function catalogAchievement(id) { return ACHIEVEMENT_CATALOG.find(achievement => achievement.id === id) || null; }
+export function catalogRelationshipEvent(id) { return RELATIONSHIP_EVENTS.find(event => event.id === id) || null; }
