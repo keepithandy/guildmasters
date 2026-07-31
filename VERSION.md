@@ -1,14 +1,31 @@
 # Version
 
-Current version: v0.1.5-dev
+Current version: v1.0.0
 
-Current phase: playable prototype
+Current phase: 22-phase roadmap foundation
 
-Current target: v0.2 progression, partially implemented
+Current target: continue authored content and presentation polish without weakening the v1.0 reliability contracts
 
-Package version: `0.1.5-dev`.
+Package version: `1.0.0`.
 
-The save-state schema label remains `v0.1.0-dev`; it is persisted-state metadata and is not the current product version.
+Save-state schema version: `2`. Product metadata stored in current saves is `1.0.0`.
+
+## v1.0.0
+
+- Implemented the shared foundation for all 22 roadmap phases.
+- Added expanded heroes, contracts, regions, factions, guildhall rooms, equipment, crafting, research, staff, events, records, modes, and long-term progression.
+- Added v1.0 state repair and a dedicated roadmap smoke suite.
+- Preserved v0.2 reliability behavior and deterministic contract fixtures.
+
+## v0.2.0
+
+- Added versioned save classification and repair with safe future-save rejection.
+- Preserved absolute contract deadlines across reloads and prevented duplicate hero assignments or rewards.
+- Added deterministic resolution fixtures while preserving live formulas and rewards.
+- Bounded the newest-first Guild Log to 50 repaired structured entries.
+- Added polite status announcements, explicit blocked/empty guidance, narrow-layout hardening, and 44px touch targets.
+- Added a read-only progression report and matching GitHub Actions smoke coverage.
+- Preserved the current progression layer: reputation-gated Ogre Toll Road, next-action guidance, ranked assignments, challenging-growth bonuses, milestones, and prototype victory.
 
 ## v0.1.5-dev
 

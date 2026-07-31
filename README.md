@@ -1,21 +1,39 @@
 # Guildmasters
 
-Guildmasters is a lightweight idle guild-management game focused on recruiting heroes, sending them on contracts, collecting rewards, and upgrading the guild through simple readable progression.
+Guildmasters is a browser-based fantasy guild-management strategy game focused on recruiting heroes, assigning contracts, collecting outcomes, and growing a living organization through a readable long-term loop.
 
-Current status: **v0.1.5-dev — playable prototype, progressing toward v0.2.**
+## Core loop
 
-## Core Pitch
+1. Recruit a hero.
+2. Assign an idle hero to an unlocked contract.
+3. Let the absolute completion timestamp continue across reloads.
+4. Resolve success or failure once.
+5. Collect gold, reputation, and hero growth.
+6. Upgrade the guild and review the durable Guild Log.
 
-Build a guild. Recruit heroes. Send contracts. Collect rewards. Expand the guild.
+## v1.0 roadmap foundation
 
-## Core Loop
+The roadmap foundation now wires all 22 planned phases into one playable dashboard:
 
-1. Recruit heroes.
-2. Assign heroes to contracts.
-3. Wait for contracts to resolve.
-4. Collect gold, reputation, and hero experience.
-5. Upgrade the guild.
-6. Unlock better contracts and better recruits.
+- Guild and hero progression with classes, skills, traits, morale, injuries, relationships, personal goals, and training.
+- Common, Uncommon, Elite, and Legendary contracts with regions, faction standing, materials, equipment rewards, bosses, and risk tiers.
+- Guildhall rooms, staff, research, crafting, inventory, records, guild identities, game modes, dynamic events, world regions, and faction pledges.
+- Save repair keeps the original v0.2 reliability guarantees while preserving the new systems.
+
+The current build remains intentionally lightweight: expedition resolution is deterministic from the party and contract data, leaving room for a future tactical combat presentation without replacing the progression spine.
+
+## Reliability baseline
+
+- Versioned save schema with current, legacy, future, missing, and malformed classification.
+- Safe repair that preserves valid heroes, contracts, currency, upgrades, and history.
+- Unsupported future saves are rejected without partially loading them.
+- Active contracts preserve `completesAt`, remain active before the deadline, and resolve once after it.
+- One hero cannot be assigned to more than one active contract.
+- Contract resolution accepts controlled random input for deterministic smoke fixtures without changing the live formulas or rewards.
+- Guild Log history is newest-first, repaired safely, and bounded to 50 entries.
+- Assignment, completion, failure, unlock, and blocked states use a concise polite live region while the Guild Log remains the durable record.
+- Empty roster, no-idle-hero, locked contract, insufficient-gold, and upgrade-blocked states explain the reason and next existing action.
+- Narrow layouts avoid horizontal overflow, keep active contracts prominent, wrap text safely, and use 44px touch targets.
 
 ## Implemented and Playable
 
@@ -36,20 +54,17 @@ Guildmasters now includes:
 - Best-fit hero ordering on contract assignment buttons.
 - Bonus hero growth for successful challenging assignments.
 - Progress milestones and an Ogre Toll Road prototype-victory message in the Guild Log.
+- Hero skills, traits, morale, injuries, personal goals, equipment slots, training, and class-fit gear.
+- Nine upgradeable guildhall rooms, six staff roles, six research projects, crafting materials, an Armory, and a Workshop.
+- Ten contracts across Common, Uncommon, Elite, and Legendary tiers, plus five regions, six factions, dynamic events, records, and four game modes.
 
-## Partially Implemented
+## Current scope
 
-- v0.2 progression: hero growth, guild upgrades, guild-level recruit bonuses, guild-level contract gates, and Ogre Toll Road's reputation gate are playable.
-- Offline completion: active contracts are resolved when the game loads, but there is no dedicated offline-progress summary or recovery UI.
+- The full roadmap foundation is playable in the browser.
+- Active contracts preserve absolute completion timestamps across reloads.
+- Dedicated tactical combat scenes, bespoke art, audio, and a larger authored story campaign remain natural follow-up polish layers on top of the completed data and progression foundation.
 
-## Planned or Unfinished
-
-- Further reputation-based contract progression.
-- Elite and Legendary contract content.
-- A records screen.
-- Fuller offline-progress handling and UI.
-
-## How To Run Locally
+## Run locally
 
 Serve the repository through a local static server, then open it in a browser:
 
@@ -59,39 +74,29 @@ python -m http.server 5173
 
 Open `http://127.0.0.1:5173`.
 
-## Smoke Check
+## Validation
 
-Run this from the repo root:
-
-```bash
+```powershell
+npm ci
 npm run smoke
-npm run check
+npm run smoke:v10
+npm run smoke:all
+npm run report:progression
 ```
 
-Both commands run the same automated smoke suite. It covers the first playable loop, successful contract resolution, guild upgrades, unlock behavior, and log persistence through save repair. Browser behavior, failure outcomes, countdown timing, and save persistence still need manual verification.
+GitHub Actions runs the same smoke and report commands on pull requests and `main`. The smoke covers save repair, reload timing, double assignment, deterministic success/failure boundaries, partial failure rewards, Guild Log retention, live-region copy, and mobile layout contracts.
 
-## Design Pillars
+The progression report prints the current recruit cost and contract table, and flags unreachable, non-positive, or obvious reward/cost discontinuities. It is read-only analysis and does not claim automatic balance correctness.
 
-- Simplicity is a feature.
-- Every major action should be readable in one screen.
-- Failure should create tension without destroying progress.
-- Progression should be visible through gold, reputation, guild level, and contract history.
-- Avoid feature creep until the core idle loop is complete.
+## Manual viewport and accessibility checklist
 
-## Initial Scope
+- Check 320px, 375px, and 430px widths without horizontal scrolling.
+- Confirm active-contract state and primary actions remain visible.
+- Navigate all buttons by keyboard and verify visible focus.
+- Confirm the latest concise status is announced once.
+- Confirm durable history remains available in the Guild Log.
+- Verify long hero, contract, and log text wraps safely.
 
-The first playable version includes:
+## Guardrails
 
-- Guild state
-- Gold
-- Reputation
-- Basic hero recruitment
-- Basic contract assignment
-- Visible success chance
-- Contract completion rewards
-- Partial rewards on failure
-- Guild upgrades
-
-## Current Target
-
-v0.2 progression: complete reputation-based contract progression while preserving the playable guild-level progression already in place.
+This reliability pass does not change contract durations, success formulas, reward amounts, recruit cost, upgrade prices, unlock levels, hero capacity rules, or progression balance. The current target remains a small v0.2 progression spine rather than feature expansion.

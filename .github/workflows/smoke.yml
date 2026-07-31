@@ -1,0 +1,26 @@
+name: Playable Loop Smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install from lockfile
+        run: npm ci
+      - name: Run playable-loop smoke
+        run: npm run smoke
+      - name: Generate read-only progression report
+        run: npm run report:progression

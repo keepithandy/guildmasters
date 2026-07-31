@@ -1,0 +1,36 @@
+/* v0.2 mobile and accessibility hardening */
+html, body { max-width: 100%; overflow-x: hidden; }
+.status-banner {
+  background: rgba(215, 168, 79, 0.12);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  color: var(--text);
+  grid-column: 1 / -1;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: 0.65rem;
+}
+.blocked-copy,
+.empty-copy {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.active-card { border-color: var(--accent); }
+.card, .panel, .button-row, .panel-title-row { min-width: 0; }
+button { min-height: 44px; white-space: normal; overflow-wrap: anywhere; }
+.log-list li { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .app-shell { width: 100%; padding: 0.5rem; }
+  #app { grid-template-columns: minmax(0, 1fr); }
+  .panel-title-row { align-items: stretch; flex-direction: column; }
+  .panel-title-row button { width: 100%; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .button-row { grid-template-columns: minmax(0, 1fr); }
+  .active-contracts-panel { order: -1; }
+}
+@media (max-width: 340px) {
+  .stats-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

@@ -1,17 +1,21 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
-import { CONTRACTS, contractUnlockProgress, isContractUnlocked, resolveContracts, startContract } from './src/contracts.js';
-import { createNewGameState, repairGameState } from './src/gameState.js';
+import { CONTRACTS, calculateSuccessChance, canAssignHero, contractUnlockProgress, isContractUnlocked, resolveContracts, startContract } from './src/contracts.js';
+import { createNewGameState, MAX_LOG_ENTRIES, repairGameState, SAVE_SCHEMA_VERSION } from './src/gameState.js';
 import { upgradeGuild } from './src/guild.js';
 import { recruitHero, recruitPowerBonus } from './src/heroes.js';
 import { nextActionGuidance, rankHeroesForContract } from './src/ui.js';
 
 const originalRandom = Math.random;
+const logMessage = entry => typeof entry === 'string' ? entry : entry?.message || '';
+const logMessages = state => state.log.map(logMessage);
 
 try {
   Math.random = () => 0;
 
   let state = createNewGameState(1000);
+  assert.equal(state.saveVersion, SAVE_SCHEMA_VERSION, 'new saves use the current schema');
   assert.equal(state.guild.gold, 100, 'new guild starts with starter gold');
   assert.equal(state.heroes.length, 0, 'new guild starts without heroes');
   assert.equal(recruitPowerBonus(state), 0, 'level 1 recruits have no guild bonus');
@@ -46,7 +50,7 @@ try {
   assert.equal(state.guild.contractsCompleted, 1, 'successful contract increments completed count');
   assert.equal(state.guild.reputation, firstContract.rewardReputation, 'successful contract grants its existing reputation reward');
   assert.ok(state.guild.gold >= firstContract.rewardGold, 'successful contract pays gold');
-  assert.ok(state.log.some((entry) => entry.includes('completed')), 'success creates a readable log entry');
+  assert.ok(state.log.some(entry => logMessage(entry).includes('completed')), 'success creates a readable log entry');
 
   const reputationAfterSuccess = state.guild.reputation;
   state = resolveContracts(state, 2000 + firstContract.durationSeconds * 1000 + 2);
@@ -68,9 +72,9 @@ try {
   assert.equal(failedState.guild.reputation, reputationBeforeFailure, 'failed contracts grant zero reputation');
   assert.equal(failedState.heroes[0].level, 1, 'failed contracts do not level the assigned hero');
   assert.equal(failedState.heroes[0].power, 1, 'failed contracts do not increase hero power');
-  assert.equal(failedState.log.filter(entry => entry.includes('first failed contract')).length, 1, 'the first failure creates one guild milestone');
+  assert.equal(failedState.log.filter(entry => logMessage(entry).includes('first failed contract')).length, 1, 'the first failure creates one guild milestone');
   failedState = resolveContracts(failedState, 3000 + firstContract.durationSeconds * 1000 + 2);
-  assert.equal(failedState.log.filter(entry => entry.includes('first failed contract')).length, 1, 'an already resolved failure cannot duplicate its milestone');
+  assert.equal(failedState.log.filter(entry => logMessage(entry).includes('first failed contract')).length, 1, 'an already resolved failure cannot duplicate its milestone');
   Math.random = () => 0;
 
   let reputationGateState = createNewGameState(4000);
@@ -101,7 +105,7 @@ try {
   assert.equal(state.guild.level, previousLevel + 1, 'guild upgrade increases level');
   assert.equal(isContractUnlocked(state, CONTRACTS[1]), true, 'level 2 unlocks second contract');
   assert.equal(recruitPowerBonus(state), 2, 'guild level improves future recruit power');
-  assert.ok(state.log.some((entry) => entry.includes('New contract unlocked')), 'upgrade logs contract unlock milestone');
+  assert.ok(state.log.some(entry => logMessage(entry).includes('New contract unlocked')), 'upgrade logs contract unlock milestone');
 
   const reputationUpgradeState = createNewGameState(5000);
   reputationUpgradeState.guild.level = 3;
@@ -109,7 +113,7 @@ try {
   reputationUpgradeState.guild.reputation = 5;
   upgradeGuild(reputationUpgradeState);
   assert.equal(reputationUpgradeState.guild.level, 4, 'guild upgrade reaches Ogre Toll Road level requirement');
-  assert.equal(reputationUpgradeState.log.some(entry => entry.includes('New contract unlocked: Ogre Toll Road.')), false, 'guild upgrade does not falsely claim a reputation-locked contract unlocked');
+  assert.equal(reputationUpgradeState.log.some(entry => logMessage(entry).includes('New contract unlocked: Ogre Toll Road.')), false, 'guild upgrade does not falsely claim a reputation-locked contract unlocked');
 
   const rankingInput = [
     { id: 'tie-first', power: 14 },
@@ -176,7 +180,7 @@ try {
   challengingGrowthState = resolveContracts(challengingGrowthState, 7000 + firstContract.durationSeconds * 1000 + 1);
   assert.equal(challengingGrowthState.heroes[0].level, 2, 'a successful challenging assignment levels the hero');
   assert.equal(challengingGrowthState.heroes[0].power, firstContract.requiredPower + 3, 'a successful assignment at required power grants base growth plus one bonus power');
-  assert.ok(challengingGrowthState.log.some(entry => entry.includes('including +1 challenging assignment bonus')), 'challenging growth is explained in the completion log');
+  assert.ok(challengingGrowthState.log.some(entry => logMessage(entry).includes('including +1 challenging assignment bonus')), 'challenging growth is explained in the completion log');
 
   let standardGrowthState = createNewGameState(7100);
   standardGrowthState.heroes.push({
@@ -190,7 +194,7 @@ try {
   standardGrowthState = startContract(standardGrowthState, 'standard-growth', firstContract.id, 7100);
   standardGrowthState = resolveContracts(standardGrowthState, 7100 + firstContract.durationSeconds * 1000 + 1);
   assert.equal(standardGrowthState.heroes[0].power, firstContract.requiredPower + 3, 'an overpowered successful assignment keeps the existing base growth');
-  assert.equal(standardGrowthState.log.some(entry => entry.includes('challenging assignment bonus')), false, 'standard growth does not claim the challenging bonus');
+  assert.equal(standardGrowthState.log.some(entry => logMessage(entry).includes('challenging assignment bonus')), false, 'standard growth does not claim the challenging bonus');
 
   let unlockedMilestoneState = createNewGameState(8000);
   unlockedMilestoneState.guild.level = 4;
@@ -205,7 +209,7 @@ try {
   });
   unlockedMilestoneState = startContract(unlockedMilestoneState, 'unlock-milestone', firstContract.id, 8000);
   unlockedMilestoneState = resolveContracts(unlockedMilestoneState, 8000 + firstContract.durationSeconds * 1000 + 1);
-  assert.ok(unlockedMilestoneState.log.includes('Contract milestone: Ogre Toll Road unlocked.'), 'reaching the final requirement logs an actual contract unlock');
+  assert.ok(logMessages(unlockedMilestoneState).includes('Contract milestone: Ogre Toll Road unlocked.'), 'reaching the final requirement logs an actual contract unlock');
 
   let reputationMilestoneState = createNewGameState(8100);
   reputationMilestoneState.guild.level = 3;
@@ -220,8 +224,8 @@ try {
   });
   reputationMilestoneState = startContract(reputationMilestoneState, 'reputation-milestone', firstContract.id, 8100);
   reputationMilestoneState = resolveContracts(reputationMilestoneState, 8100 + firstContract.durationSeconds * 1000 + 1);
-  assert.ok(reputationMilestoneState.log.includes('Reputation milestone: 6 reached for Ogre Toll Road.'), 'reputation progress is recorded without falsely claiming a level-locked contract is unlocked');
-  assert.equal(reputationMilestoneState.log.includes('Contract milestone: Ogre Toll Road unlocked.'), false, 'reputation alone does not create an unlock milestone');
+  assert.ok(logMessages(reputationMilestoneState).includes('Reputation milestone: 6 reached for Ogre Toll Road.'), 'reputation progress is recorded without falsely claiming a level-locked contract is unlocked');
+  assert.equal(logMessages(reputationMilestoneState).includes('Contract milestone: Ogre Toll Road unlocked.'), false, 'reputation alone does not create an unlock milestone');
 
   let heroMilestoneState = createNewGameState(8200);
   heroMilestoneState.heroes.push({
@@ -234,7 +238,7 @@ try {
   });
   heroMilestoneState = startContract(heroMilestoneState, 'hero-milestone', firstContract.id, 8200);
   heroMilestoneState = resolveContracts(heroMilestoneState, 8200 + firstContract.durationSeconds * 1000 + 1);
-  assert.ok(heroMilestoneState.log.includes('Hero milestone: Hero Milestone reached level 5.'), 'successful growth logs five-level hero milestones');
+  assert.ok(logMessages(heroMilestoneState).includes('Hero milestone: Hero Milestone reached level 5.'), 'successful growth logs five-level hero milestones');
 
   let ogreVictoryState = createNewGameState(8300);
   ogreVictoryState.guild.level = 4;
@@ -250,9 +254,9 @@ try {
   ogreVictoryState = startContract(ogreVictoryState, 'ogre-victor', ogreTollRoad.id, 8300);
   ogreVictoryState = resolveContracts(ogreVictoryState, 8300 + ogreTollRoad.durationSeconds * 1000 + 1);
   const victoryMessage = 'Prototype victory: Ogre Toll Road cleared. The current guild progression path is complete.';
-  assert.equal(ogreVictoryState.log.filter(entry => entry === victoryMessage).length, 1, 'a successful Ogre Toll Road completion logs the prototype victory');
+  assert.equal(ogreVictoryState.log.filter(entry => logMessage(entry) === victoryMessage).length, 1, 'a successful Ogre Toll Road completion logs the prototype victory');
   ogreVictoryState = resolveContracts(ogreVictoryState, 8300 + ogreTollRoad.durationSeconds * 1000 + 2);
-  assert.equal(ogreVictoryState.log.filter(entry => entry === victoryMessage).length, 1, 'an already resolved Ogre contract cannot duplicate its victory message');
+  assert.equal(ogreVictoryState.log.filter(entry => logMessage(entry) === victoryMessage).length, 1, 'an already resolved Ogre contract cannot duplicate its victory message');
 
   let failedOgreState = createNewGameState(8400);
   failedOgreState.guild.level = 4;
@@ -268,7 +272,7 @@ try {
   failedOgreState = startContract(failedOgreState, 'failed-ogre', ogreTollRoad.id, 8400);
   Math.random = () => 0.99;
   failedOgreState = resolveContracts(failedOgreState, 8400 + ogreTollRoad.durationSeconds * 1000 + 1);
-  assert.equal(failedOgreState.log.includes(victoryMessage), false, 'a failed Ogre Toll Road attempt does not log victory');
+  assert.equal(logMessages(failedOgreState).includes(victoryMessage), false, 'a failed Ogre Toll Road attempt does not log victory');
   Math.random = () => 0;
 
   const repaired = repairGameState(JSON.parse(JSON.stringify(state)));
@@ -283,11 +287,56 @@ try {
 
   const newestFirstLog = Array.from({ length: 25 }, (_, index) => `entry-${index}`);
   const repairedLog = repairGameState({ log: newestFirstLog }).log;
-  assert.equal(repairedLog.length, 20, 'repair limits the guild log to twenty entries');
-  assert.equal(repairedLog[0], 'entry-0', 'repair keeps the newest log entry');
-  assert.equal(repairedLog[19], 'entry-19', 'repair drops entries older than the newest twenty');
+  assert.equal(repairedLog.length, 25, 'repair preserves logs within the fifty-entry retention bound');
+  assert.equal(repairedLog[0].message, 'entry-0', 'repair keeps the newest log entry first');
+  assert.equal(repairedLog[24].message, 'entry-24', 'repair preserves the oldest entry within the bound');
 
-  console.log('Guildmasters smoke passed.');
+  const reliabilityState = createNewGameState(9000);
+  recruitHero(reliabilityState, () => 0, 9001);
+  const reliabilityHeroId = reliabilityState.heroes[0].id;
+  reliabilityState.heroes[0].power = 999;
+  startContract(reliabilityState, reliabilityHeroId, firstContract.id, 9100, now => `active-${now}`);
+  assert.equal(canAssignHero(reliabilityState, reliabilityHeroId).allowed, false, 'busy hero cannot be assigned again');
+  startContract(reliabilityState, reliabilityHeroId, firstContract.id, 9101, now => `active-${now}`);
+  assert.equal(reliabilityState.activeContracts.length, 1, 'rapid or stale assignment does not duplicate a contract');
+  assert.match(reliabilityState.statusMessage, /already assigned/, 'blocked assignment has a readable reason');
+
+  const beforeDue = repairGameState(JSON.parse(JSON.stringify(reliabilityState)), 9200);
+  const dueAt = beforeDue.activeContracts[0].completesAt;
+  assert.equal(beforeDue.activeContracts.length, 1, 'future contract survives reload');
+  resolveContracts(beforeDue, dueAt - 1, () => 0);
+  assert.equal(beforeDue.activeContracts.length, 1, 'contract does not resolve before its absolute deadline');
+  resolveContracts(beforeDue, dueAt + 1, () => 0);
+  const goldAfterReliabilitySuccess = beforeDue.guild.gold;
+  resolveContracts(beforeDue, dueAt + 2, () => 0);
+  assert.equal(beforeDue.guild.gold, goldAfterReliabilitySuccess, 'resolved contract cannot duplicate rewards');
+  assert.equal(calculateSuccessChance(10, 10), 70, 'success threshold remains unchanged');
+
+  const legacy = JSON.parse(JSON.stringify(beforeDue));
+  delete legacy.saveVersion;
+  const repairedLegacy = repairGameState(legacy, 9300);
+  assert.equal(repairedLegacy.saveVersion, SAVE_SCHEMA_VERSION, 'legacy save is upgraded in memory');
+  assert.equal(repairedLegacy.guild.level, beforeDue.guild.level, 'legacy repair preserves progress');
+  const future = repairGameState({ saveVersion: SAVE_SCHEMA_VERSION + 1, guild: { gold: 9999 } }, 9400);
+  assert.equal(future.guild.gold, 100, 'future save is rejected safely');
+  assert.match(future.statusMessage, /newer than this build/, 'future rejection is readable');
+
+  const malformed = repairGameState({ saveVersion: SAVE_SCHEMA_VERSION, log: [null, 'valid', { message: 'newer', timestamp: 9 }, { message: 'older', timestamp: 2 }], heroes: [] }, 9500);
+  assert.equal(malformed.log[0].message, 'newer', 'timestamped log repair orders newest events first');
+  for (let index = 0; index < MAX_LOG_ENTRIES + 20; index += 1) {
+    malformed.log.push({ id: `x-${index}`, timestamp: index, message: `event ${index}` });
+  }
+  assert.equal(repairGameState(malformed, 9600).log.length, MAX_LOG_ENTRIES, 'log retention is bounded');
+
+  const uiSource = fs.readFileSync('src/ui.js', 'utf8');
+  assert.match(uiSource, /aria-live="polite"/, 'status changes use a polite live region');
+  assert.match(uiSource, /No heroes yet/, 'empty roster copy is explicit');
+  assert.match(uiSource, /No idle heroes/, 'blocked contract copy is explicit');
+  const mobileCss = fs.readFileSync('mobile.css', 'utf8');
+  assert.match(mobileCss, /min-height: 44px/, 'touch targets meet the mobile contract');
+  assert.match(mobileCss, /overflow-x: hidden/, 'narrow layouts prevent horizontal overflow');
+
+  console.log('Guildmasters v0.2 reliability and progression smoke passed.');
 } finally {
   Math.random = originalRandom;
 }
