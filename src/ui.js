@@ -1,7 +1,7 @@
 import { CONTRACTS, activeContractDetails, calculateSuccessChance, contractUnlockProgress, contractUnlockRequirements, isContractUnlocked, nextContractUnlock } from './contracts.js';
 import { canUpgradeGuild, guildUpgradeBlockedReason, guildUpgradeCost, canUpgradeRoom, roomUpgradeCost } from './guild.js';
 import { canRecruitHero, heroTotalPower, RECRUIT_COST, recruitPowerBonus, recruitmentBlockedReason } from './heroes.js';
-import { EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, ROOM_CATALOG, STAFF_CATALOG, catalogEvent, catalogItem } from './content.js';
+import { CAMPAIGN_CHAPTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, TACTICAL_DRILLS, catalogChapter, catalogEvent, catalogItem } from './content.js';
 
 export function render(state, actions) {
   const root = document.getElementById('app');
@@ -12,6 +12,8 @@ export function render(state, actions) {
   root.innerHTML = `
     <p id="guildStatus" class="status-banner" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(state.statusMessage || 'Guild ready.')}</p>
     ${renderGuildPanel(state, nextUnlock, upgradeReason)}
+    ${renderOfflinePanel(state)}
+    ${renderCampaignPanel(state)}
     ${renderEventPanel(state)}
     ${renderHeroPanel(state, recruitReason)}
     ${renderContractPanel(state)}
@@ -19,6 +21,8 @@ export function render(state, actions) {
     ${renderGuildhallPanel(state)}
     ${renderWorldPanel(state)}
     ${renderFactionPanel(state)}
+    ${renderRivalPanel(state)}
+    ${renderTacticalPanel(state)}
     ${renderProgressionPanel(state)}
     ${renderArmoryPanel(state)}
     ${renderRecordsPanel(state)}
@@ -48,6 +52,18 @@ function renderEventPanel(state) {
   return `<section class="panel event-panel"><div class="panel-title-row"><h2>Guild Events</h2><span class="badge">${state.events.length} waiting</span></div>
     ${state.events.length ? `<div class="card-list">${state.events.map(active => { const event = catalogEvent(active.eventId); return event ? `<article class="card event-card"><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(event.description)}</p><div class="button-row">${event.options.map(option => `<button data-action="event" data-event-id="${escapeHtml(event.id)}" data-option-id="${escapeHtml(option.id)}">${escapeHtml(option.label)}</button>`).join('')}</div></article>` : ''; }).join('')}</div>` : '<p class="empty-copy">No urgent events. Begin another day to see what the world brings.</p>'}
   </section>`;
+}
+
+function renderOfflinePanel(state) {
+  const summary = state.offlineSummary || {};
+  if (!summary.elapsedSeconds && !summary.resolvedContracts) return '';
+  const minutes = Math.max(1, Math.floor((summary.elapsedSeconds || 0) / 60));
+  return `<section class="panel offline-panel"><div class="panel-title-row"><div><p class="eyebrow">Return report</p><h2>While You Were Away</h2></div><span class="badge">${minutes}m</span></div><p>${summary.resolvedContracts ? `${summary.resolvedContracts} expedition${summary.resolvedContracts === 1 ? '' : 's'} resolved while the guild was unattended.` : 'The guild held its position while you were away.'}</p><p class="helper-text">Offline recovery is safe: absolute contract deadlines were preserved and each completed contract was awarded once.</p></section>`;
+}
+
+function renderCampaignPanel(state) {
+  const chapter = catalogChapter(state.campaign.activeChapter);
+  return `<section class="panel campaign-panel"><div class="panel-title-row"><div><p class="eyebrow">Story campaign</p><h2>${escapeHtml(chapter?.title || 'Campaign complete')}</h2></div><span class="badge">${state.campaign.chaptersCompleted.length}/${CAMPAIGN_CHAPTERS.length}</span></div><p>${escapeHtml(chapter?.description || 'The guild has written its own ending.')}</p><button data-action="advanceCampaign" ${chapter && chapter.requirement(state) ? '' : 'disabled'}>${chapter ? 'Complete chapter' : 'Campaign complete'}</button><div class="chapter-list">${CAMPAIGN_CHAPTERS.map(item => `<span class="chapter-pill ${state.campaign.chaptersCompleted.includes(item.id) ? 'complete' : item.id === state.campaign.activeChapter ? 'current' : ''}">${escapeHtml(item.title)}</span>`).join('')}</div></section>`;
 }
 
 function renderHeroPanel(state, recruitReason) {
@@ -105,6 +121,15 @@ function renderFactionPanel(state) {
   return `<section class="panel faction-panel"><div class="panel-title-row"><div><p class="eyebrow">Politics and alliances</p><h2>Faction Standing</h2></div><span class="badge">${state.guild.influence} influence</span></div><div class="card-list">${factions.map(id => { const standing = state.factions[id] || 0; return `<article class="card"><h3>${escapeHtml(id.replaceAll('-', ' '))}</h3><p>Standing: <strong>${standing}</strong></p><button data-action="supportFaction" data-faction-id="${escapeHtml(id)}" ${state.guild.influence < 1 ? 'disabled' : ''}>Pledge Support</button></article>`; }).join('')}</div></section>`;
 }
 
+function renderRivalPanel(state) {
+  return `<section class="panel rival-panel"><div class="panel-title-row"><div><p class="eyebrow">Competition and pressure</p><h2>Rival Guilds</h2></div><span class="badge">${Object.values(state.rivals).reduce((total, rival) => total + rival.victories, 0)} wins</span></div><div class="card-list">${RIVAL_GUILDS.map(rival => { const score = state.rivals[rival.id] || { victories: 0, defeats: 0 }; return `<article class="card"><div class="card-title-row"><h3>${escapeHtml(rival.name)}</h3><span class="badge">${score.victories}–${score.defeats}</span></div><p>${escapeHtml(rival.style)} • Requires guild level ${rival.requiredGuildLevel}.</p><button data-action="challengeRival" data-rival-id="${escapeHtml(rival.id)}" ${state.guild.level < rival.requiredGuildLevel || !state.heroes.length ? 'disabled' : ''}>Challenge Rival</button></article>`; }).join('')}</div></section>`;
+}
+
+function renderTacticalPanel(state) {
+  const idleCount = state.heroes.filter(hero => hero.status === 'idle').length;
+  return `<section class="panel tactical-panel"><div class="panel-title-row"><div><p class="eyebrow">Expedition preparation</p><h2>Tactical Drills</h2></div><span class="badge">${state.tactical.encountersWon} wins</span></div><p class="helper-text">Drills use all idle heroes as a temporary party. Enemy weaknesses reward the right class and raise morale without consuming a contract slot.</p><div class="card-list">${TACTICAL_DRILLS.map(drill => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(drill.name)}</h3><span class="badge">${drill.requiredPower} power</span></div><p>Enemy: ${escapeHtml(drill.enemy)} • Reward: ${drill.rewardGold}g and ${drill.rewardMaterials} materials.</p><button data-action="runTacticalDrill" data-drill-id="${escapeHtml(drill.id)}" ${idleCount === 0 ? 'disabled' : ''}>Run with ${idleCount} idle hero${idleCount === 1 ? '' : 'es'}</button></article>`).join('')}</div></section>`;
+}
+
 function renderProgressionPanel(state) {
   return `<section class="panel progression-panel"><div class="panel-title-row"><div><p class="eyebrow">Long-term development</p><h2>Research and Specialists</h2></div><span class="badge">${state.research.length}/${RESEARCH_CATALOG.length} researched</span></div><div class="subsection"><h3>Research</h3><div class="card-list">${RESEARCH_CATALOG.map(project => `<article class="card"><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(project.description)}</p><button data-action="research" data-project-id="${escapeHtml(project.id)}" ${state.research.includes(project.id) || state.guild.researchPoints < project.cost ? 'disabled' : ''}>${state.research.includes(project.id) ? 'Complete' : `Research (${project.cost} pts)`}</button></article>`).join('')}</div></div><div class="subsection"><h3>Guild Staff</h3><div class="card-list">${STAFF_CATALOG.map(staff => `<article class="card"><h3>${escapeHtml(staff.name)}</h3><p>${escapeHtml(staff.description)}</p><button data-action="hireStaff" data-staff-id="${escapeHtml(staff.id)}" ${state.staff.includes(staff.id) || state.guild.gold < staff.cost ? 'disabled' : ''}>${state.staff.includes(staff.id) ? 'Hired' : `Hire (${staff.cost}g)`}</button></article>`).join('')}</div></div></section>`;
 }
@@ -141,6 +166,9 @@ function bindActions(root, actions) {
     else if (action === 'craftItem') actions.craftItem(button.dataset.itemId);
     else if (action === 'upgradeGuild') actions.upgradeGuild();
     else if (action === 'advanceDay') actions.advanceDay();
+    else if (action === 'advanceCampaign') actions.advanceCampaign();
+    else if (action === 'challengeRival') actions.challengeRival(button.dataset.rivalId);
+    else if (action === 'runTacticalDrill') actions.runTacticalDrill(button.dataset.drillId);
     else if (action === 'recruitHero') actions.recruitHero();
     else if (action === 'saveGame') actions.saveGame();
     else if (action === 'resetGame') actions.resetGame();

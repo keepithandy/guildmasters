@@ -1,6 +1,6 @@
 import { createNewGameState, repairGameState } from './gameState.js';
 
-const SAVE_KEY = 'guildmasters.save.v1';
+const SAVE_KEY = 'guildmasters.save.v2';
 
 export function loadGame() {
   try {

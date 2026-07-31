@@ -1,14 +1,22 @@
 # Version
 
-Current version: v1.0.0
+Current version: v1.1.0
 
-Current phase: 22-phase roadmap foundation
+Current phase: campaign and expedition depth
 
 Current target: continue authored content and presentation polish without weakening the v1.0 reliability contracts
 
-Package version: `1.0.0`.
+Package version: `1.1.0`.
 
-Save-state schema version: `2`. Product metadata stored in current saves is `1.0.0`.
+Save-state schema version: `3`. Product metadata stored in current saves is `1.1.0`.
+
+## v1.1.0
+
+- Added authored campaign chapters with requirements, rewards, and chapter tracking.
+- Added rival guild challenges with victory and defeat records.
+- Added tactical drills with party power, enemy weaknesses, morale, and material rewards.
+- Added an explicit offline return summary and safe return logging.
+- Added v1.1 smoke coverage and advanced save repair.
 
 ## v1.0.0
 

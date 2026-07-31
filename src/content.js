@@ -80,6 +80,28 @@ export const GAME_MODES = [
   { id: 'ironman', name: 'Ironman', description: 'Failure is permanent and rewards are higher.' }
 ];
 
+export const CAMPAIGN_CHAPTERS = [
+  { id: 'small-beginning', title: 'Chapter I: A Small Beginning', description: 'Prove that the new guild can protect its neighbors.', requirement: state => state.guild.contractsCompleted >= 1, rewardGold: 80, rewardReputation: 2 },
+  { id: 'frontier-trouble', title: 'Chapter II: Trouble on the Frontier', description: 'Earn a reputation strong enough to draw the attention of rival guilds.', requirement: state => state.guild.reputation >= 6, rewardGold: 140, rewardReputation: 4 },
+  { id: 'old-secrets', title: 'Chapter III: Secrets of the Old Kingdom', description: 'Explore beyond the frontier and begin researching the old seals.', requirement: state => state.regions.explored.includes('greenwood') && state.research.includes('contract-lore'), rewardGold: 240, rewardReputation: 6 },
+  { id: 'war-of-influence', title: 'Chapter IV: War of Influence', description: 'Build enough standing to choose the guild’s allies.', requirement: state => Object.values(state.factions).some(value => value >= 10), rewardGold: 400, rewardReputation: 8 },
+  { id: 'greater-threat', title: 'Chapter V: The Greater Threat', description: 'Prepare a legendary roster for the threat beneath the world.', requirement: state => state.guild.level >= 6 && state.guild.prestige >= 8, rewardGold: 700, rewardReputation: 12 },
+  { id: 'final-expedition', title: 'Chapter VI: The Final Expedition', description: 'Defeat a legendary boss and decide what the guild becomes.', requirement: state => state.guild.records.bossesDefeated >= 1, rewardGold: 1500, rewardReputation: 20 }
+];
+
+export const RIVAL_GUILDS = [
+  { id: 'silver-company', name: 'The Silver Company', style: 'Elite contract specialists', requiredGuildLevel: 2, rewardGold: 100, rewardReputation: 2 },
+  { id: 'black-lanterns', name: 'The Black Lanterns', style: 'Secretive ruin hunters', requiredGuildLevel: 4, rewardGold: 260, rewardReputation: 5 },
+  { id: 'royal-standard', name: 'The Royal Standard', style: 'Crown-backed champions', requiredGuildLevel: 6, rewardGold: 600, rewardReputation: 9 }
+];
+
+export const TACTICAL_DRILLS = [
+  { id: 'goblin-skirmish', name: 'Goblin Skirmish', enemy: 'goblins', requiredPower: 20, rewardGold: 30, rewardMaterials: 1 },
+  { id: 'spider-ambush', name: 'Spider Ambush', enemy: 'spiders', requiredPower: 42, rewardGold: 75, rewardMaterials: 3 },
+  { id: 'elemental-breach', name: 'Elemental Breach', enemy: 'elementals', requiredPower: 75, rewardGold: 150, rewardMaterials: 6 },
+  { id: 'undead-vanguard', name: 'Undead Vanguard', enemy: 'undead', requiredPower: 120, rewardGold: 300, rewardMaterials: 10 }
+];
+
 export function catalogItem(id) { return ITEM_CATALOG.find(item => item.id === id) || null; }
 export function catalogRoom(id) { return ROOM_CATALOG.find(room => room.id === id) || null; }
 export function catalogFaction(id) { return FACTION_CATALOG.find(faction => faction.id === id) || null; }
@@ -87,3 +109,6 @@ export function catalogRegion(id) { return REGION_CATALOG.find(region => region.
 export function catalogResearch(id) { return RESEARCH_CATALOG.find(project => project.id === id) || null; }
 export function catalogStaff(id) { return STAFF_CATALOG.find(staff => staff.id === id) || null; }
 export function catalogEvent(id) { return EVENT_CATALOG.find(event => event.id === id) || null; }
+export function catalogChapter(id) { return CAMPAIGN_CHAPTERS.find(chapter => chapter.id === id) || null; }
+export function catalogRival(id) { return RIVAL_GUILDS.find(rival => rival.id === id) || null; }
+export function catalogDrill(id) { return TACTICAL_DRILLS.find(drill => drill.id === id) || null; }

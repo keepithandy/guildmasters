@@ -1,13 +1,17 @@
 import { resolveContracts, startContract } from './contracts.js';
 import { upgradeGuild, buyItem, setGuildIdentity, upgradeRoom } from './guild.js';
 import { equipItem, recruitHero, trainHero } from './heroes.js';
-import { advanceDay, bootstrapFoundation, chooseEvent, craftItem, exploreRegion, hireStaff, researchProject, setMode, supportFaction } from './systems.js';
+import { advanceCampaign, advanceDay, bootstrapFoundation, challengeRival, chooseEvent, craftItem, exploreRegion, hireStaff, recordOfflineReturn, researchProject, runTacticalDrill, setMode, supportFaction } from './systems.js';
 import { loadGame, resetGame, saveGame } from './saveSystem.js';
 import { render } from './ui.js';
 import { catalogItem } from './content.js';
 
-let state = bootstrapFoundation(loadGame());
+let state = loadGame();
+const previousLastSeen = state.lastSeenAt;
+const activeContractsBeforeLoad = state.activeContracts.length;
+state = bootstrapFoundation(state);
 state = resolveContracts(state);
+state = recordOfflineReturn(state, previousLastSeen, activeContractsBeforeLoad);
 saveGame(state);
 
 const actions = {
@@ -16,6 +20,9 @@ const actions = {
   upgradeGuild() { state = upgradeGuild(state); saveAndRender(); },
   upgradeRoom(roomId) { state = upgradeRoom(state, roomId); saveAndRender(); },
   advanceDay() { state = advanceDay(state); saveAndRender(); },
+  advanceCampaign() { state = advanceCampaign(state); saveAndRender(); },
+  challengeRival(rivalId) { state = challengeRival(state, rivalId); saveAndRender(); },
+  runTacticalDrill(drillId) { state = runTacticalDrill(state, drillId, state.heroes.map(hero => hero.id)); saveAndRender(); },
   trainHero(heroId) { state = trainHero(state, heroId); saveAndRender(); },
   equipItem(heroId, itemId) { state = equipItem(state, heroId, itemId); saveAndRender(); },
   exploreRegion(regionId) { state = exploreRegion(state, regionId); saveAndRender(); },

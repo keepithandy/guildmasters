@@ -1,6 +1,6 @@
 import { appendLog, updateRecord } from './gameState.js';
-import { EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, STAFF_CATALOG, catalogEvent, catalogRegion, catalogResearch, catalogStaff } from './content.js';
-import { addInventory, findHero, trainHero } from './heroes.js';
+import { CAMPAIGN_CHAPTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, catalogChapter, catalogDrill, catalogEvent, catalogRegion, catalogResearch, catalogRival, catalogStaff } from './content.js';
+import { addInventory, findHero, heroTotalPower, trainHero } from './heroes.js';
 import { buyItem, upgradeRoom } from './guild.js';
 
 export function advanceDay(state, now = Date.now()) {
@@ -102,13 +102,84 @@ export function setMode(state, modeId, now = Date.now()) {
   return setSystemMessage(state, `Game mode set to ${modeId}.`, now);
 }
 
+export function advanceCampaign(state, now = Date.now()) {
+  const chapter = catalogChapter(state.campaign.activeChapter);
+  if (!chapter) return state;
+  if (!chapter.requirement(state)) return setSystemMessage(state, `${chapter.title} is not ready. ${chapter.description}`, now);
+  if (!state.campaign.chaptersCompleted.includes(chapter.id)) {
+    state.campaign.chaptersCompleted.push(chapter.id);
+    state.guild.gold += chapter.rewardGold;
+    state.guild.reputation += chapter.rewardReputation;
+    const next = CAMPAIGN_CHAPTERS.find(candidate => !state.campaign.chaptersCompleted.includes(candidate.id));
+    state.campaign.activeChapter = next?.id || chapter.id;
+    return setSystemMessage(state, `${chapter.title} completed. +${chapter.rewardGold} gold and +${chapter.rewardReputation} reputation.`, now);
+  }
+  return state;
+}
+
+export function challengeRival(state, rivalId, now = Date.now()) {
+  const rival = catalogRival(rivalId);
+  if (!rival) return state;
+  if (state.guild.level < rival.requiredGuildLevel) return setSystemMessage(state, `${rival.name} requires guild level ${rival.requiredGuildLevel}.`, now);
+  const rosterPower = state.heroes.reduce((total, hero) => total + heroTotalPower(hero), 0);
+  const requiredPower = rival.requiredGuildLevel * 30;
+  state.rivals[rivalId] ||= { victories: 0, defeats: 0, reputation: 0 };
+  const result = rosterPower >= requiredPower;
+  if (result) {
+    state.rivals[rivalId].victories += 1;
+    state.rivals[rivalId].reputation += rival.rewardReputation;
+    state.guild.gold += rival.rewardGold;
+    state.guild.reputation += rival.rewardReputation;
+    state.guild.prestige += 2;
+    return setSystemMessage(state, `Rival challenge won against ${rival.name}. +${rival.rewardGold} gold and +${rival.rewardReputation} reputation.`, now);
+  }
+  state.rivals[rivalId].defeats += 1;
+  state.guild.reputation = Math.max(0, state.guild.reputation - 1);
+  return setSystemMessage(state, `${rival.name} won the challenge. The guild lost 1 reputation but learned from the defeat.`, now);
+}
+
+export function runTacticalDrill(state, drillId, heroIds = [], now = Date.now()) {
+  const drill = catalogDrill(drillId);
+  const party = heroIds.map(heroId => findHero(state, heroId)).filter(Boolean).filter(hero => hero.status === 'idle');
+  if (!drill) return state;
+  if (!party.length) return setSystemMessage(state, 'Choose at least one idle hero for the tactical drill.', now);
+  const partyPower = party.reduce((total, hero) => total + heroTotalPower(hero), 0);
+  const weaknessBonus = party.some(hero => hero.className === weaknessFor(drill.enemy)) ? 10 : 0;
+  const success = partyPower + weaknessBonus >= drill.requiredPower;
+  state.tactical.drillsCompleted += 1;
+  if (success) {
+    state.tactical.encountersWon += 1;
+    state.guild.gold += drill.rewardGold;
+    state.guild.materials += drill.rewardMaterials;
+    state.guild.prestige += 1;
+    party.forEach(hero => { hero.morale = Math.min(100, (hero.morale || 75) + 5); });
+    return setSystemMessage(state, `${drill.name} won. The party exploited the ${drill.enemy} weakness and earned rewards.`, now);
+  }
+  state.tactical.encountersLost += 1;
+  party.forEach(hero => { hero.morale = Math.max(0, (hero.morale || 75) - 4); });
+  return setSystemMessage(state, `${drill.name} lost. Study the enemy weakness and improve the party before trying again.`, now);
+}
+
+export function recordOfflineReturn(state, previousLastSeen, activeBefore, now = Date.now()) {
+  const elapsedSeconds = Math.max(0, Math.floor((now - previousLastSeen) / 1000));
+  const resolvedContracts = Math.max(0, activeBefore - state.activeContracts.length);
+  state.offlineSummary = { elapsedSeconds, resolvedContracts, returnedAt: now };
+  if (elapsedSeconds >= 30 || resolvedContracts > 0) {
+    const awayMinutes = Math.max(1, Math.floor(elapsedSeconds / 60));
+    const message = resolvedContracts > 0 ? `Welcome back. ${resolvedContracts} expedition${resolvedContracts === 1 ? '' : 's'} resolved while you were away (${awayMinutes}m).` : `Welcome back. The guild kept watch for ${awayMinutes}m.`;
+    state.statusMessage = message;
+    appendLog(state, message, now);
+  }
+  return state;
+}
+
 export function bootstrapFoundation(state, now = Date.now()) {
   if (!state.inventory.length) addInventory(state, 'iron-sword', 1, now);
   if (!state.inventory.some(item => item.itemId === 'hunter-bow')) addInventory(state, 'hunter-bow', 1, now);
   return state;
 }
 
-export { EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, STAFF_CATALOG, buyItem, upgradeRoom };
+export { CAMPAIGN_CHAPTERS, EVENT_CATALOG, GAME_MODES, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, STAFF_CATALOG, TACTICAL_DRILLS, buyItem, upgradeRoom };
 
 function maybeCreateEvent(state, now) {
   if (state.events.length >= 2 || state.guild.day < 2) return;
@@ -120,3 +191,4 @@ function maybeCreateEvent(state, now) {
 }
 
 function setSystemMessage(state, message, now) { state.statusMessage = message; appendLog(state, message, now); return state; }
+function weaknessFor(enemy) { return { goblins: 'Warrior', spiders: 'Mage', elementals: 'Rogue', undead: 'Cleric' }[enemy] || 'Ranger'; }

@@ -1,5 +1,5 @@
-export const GAME_VERSION = '1.0.0';
-export const SAVE_SCHEMA_VERSION = 2;
+export const GAME_VERSION = '1.1.0';
+export const SAVE_SCHEMA_VERSION = 3;
 export const MAX_LOG_ENTRIES = 80;
 
 export function createNewGameState(now = Date.now()) {
@@ -41,6 +41,10 @@ export function createNewGameState(now = Date.now()) {
     factions: {},
     regions: { unlocked: ['frontier'], explored: [] },
     events: [],
+    campaign: { chaptersCompleted: [], activeChapter: 'small-beginning' },
+    rivals: {},
+    tactical: { drillsCompleted: 0, encountersWon: 0, encountersLost: 0 },
+    offlineSummary: { elapsedSeconds: 0, resolvedContracts: 0, returnedAt: now },
     flags: {},
     log: [{ id: 'log-founded', timestamp: now, message: 'Guild founded. Recruit your first hero.' }],
     lastSeenAt: now,
@@ -86,6 +90,10 @@ export function repairGameState(input, now = Date.now()) {
     factions: repairFactions(input.factions),
     regions: repairRegions(input.regions),
     events: repairEvents(input.events),
+    campaign: repairCampaign(input.campaign),
+    rivals: repairRivals(input.rivals),
+    tactical: repairTactical(input.tactical),
+    offlineSummary: repairOfflineSummary(input.offlineSummary, now),
     flags: input.flags && typeof input.flags === 'object' ? { ...input.flags } : {},
     log: repairLog(input.log, fallback.log),
     lastSeenAt: nonNegativeNumber(input.lastSeenAt, now),
@@ -220,6 +228,34 @@ function repairRegions(value) {
 function repairEvents(value) {
   if (!Array.isArray(value)) return [];
   return value.filter(item => item && typeof item === 'object').slice(0, 4).map(item => ({ id: safeText(item.id, ''), eventId: safeText(item.eventId, ''), createdDay: positiveInt(item.createdDay, 1) }));
+}
+
+function repairCampaign(value) {
+  const campaign = value && typeof value === 'object' ? value : {};
+  return {
+    chaptersCompleted: Array.isArray(campaign.chaptersCompleted) ? campaign.chaptersCompleted.filter(item => typeof item === 'string') : [],
+    activeChapter: safeText(campaign.activeChapter, 'small-beginning')
+  };
+}
+
+function repairRivals(value) {
+  const rivals = value && typeof value === 'object' ? value : {};
+  const repaired = {};
+  for (const [id, rival] of Object.entries(rivals)) {
+    if (!rival || typeof rival !== 'object') continue;
+    repaired[id] = { victories: nonNegativeNumber(rival.victories, 0), defeats: nonNegativeNumber(rival.defeats, 0), reputation: nonNegativeNumber(rival.reputation, 0) };
+  }
+  return repaired;
+}
+
+function repairTactical(value) {
+  const tactical = value && typeof value === 'object' ? value : {};
+  return { drillsCompleted: nonNegativeNumber(tactical.drillsCompleted, 0), encountersWon: nonNegativeNumber(tactical.encountersWon, 0), encountersLost: nonNegativeNumber(tactical.encountersLost, 0) };
+}
+
+function repairOfflineSummary(value, now) {
+  const summary = value && typeof value === 'object' ? value : {};
+  return { elapsedSeconds: nonNegativeNumber(summary.elapsedSeconds, 0), resolvedContracts: nonNegativeNumber(summary.resolvedContracts, 0), returnedAt: nonNegativeNumber(summary.returnedAt, now) };
 }
 
 function repairLog(value, fallback) {
