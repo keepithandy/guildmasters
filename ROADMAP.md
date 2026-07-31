@@ -1,6 +1,6 @@
 # Guildmasters Roadmap
 
-The v1.0 foundation wires the 22 planned phases into one shared browser-game state model. Each phase below is represented in the playable build; future work can deepen presentation, authored content, and tactical combat without replacing the progression spine.
+The v2.0.0 release candidate wires all 22 planned phases into one shared browser-game state model. Each phase is represented in the playable build and covered by the roadmap audit; final release work is now verification, balance, presentation, and content polish.
 
 1. **Core Prototype — complete:** Guild state, save repair, recruitable heroes, contracts, timers, outcomes, and upgrades.
 2. **Playable Guild Loop — complete:** Recruit → prepare → assign → resolve → reward → upgrade loop with daily progression.
@@ -21,13 +21,14 @@ The v1.0 foundation wires the 22 planned phases into one shared browser-game sta
 17. **Endgame Content — complete:** Legendary clears, prestige, records, final regions, boss hooks, and repeatable expedition progression.
 18. **Game Modes — complete:** Story, Sandbox, Challenge, and Ironman mode selection with mode-aware reward and failure behavior.
 19. **Polish and Quality of Life — complete:** Responsive dashboard, live status region, tooltips through readable copy, save action, records, guidance, filters-ready data, and mobile touch targets.
-20. **Early Access — ready:** Dedicated v1.1 smoke coverage, progression report, offline recovery, save compatibility, and a compact content foundation suitable for iterative releases.
-21. **Version 1.0 — foundation complete:** All core systems and content registries are playable together in the browser.
+20. **Early Access — release-ready foundation:** Dedicated smoke coverage, progression report, offline recovery, save compatibility, and a compact content foundation suitable for iterative releases.
+21. **Version 1.0 — release-candidate complete:** All core systems and content registries are playable together in the browser and covered by the roadmap audit.
 22. **Post-Launch Updates — ready:** Data-driven catalogs make new regions, heroes, contracts, factions, items, events, and story chapters additive.
 
 ## Verification
 
 ```bash
 npm run smoke:all
+npm run smoke:roadmap
 npm run report:progression
 ```

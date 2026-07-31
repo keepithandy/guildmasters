@@ -1,14 +1,21 @@
 # Version
 
-Current version: v1.3.0
+Current version: v2.0.0-rc.1
 
-Current phase: authored endgame depth
+Current phase: 22-phase release candidate verification
 
-Current target: continue authored content and presentation polish without weakening the v1.0 reliability contracts
+Current target: complete manual browser QA, balance tuning, and final presentation polish before v2.0.0 final
 
-Package version: `1.3.0`.
+Package version: `2.0.0-rc.1`.
 
-Save-state schema version: `5`. Product metadata stored in current saves is `1.3.0`.
+Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.1`.
+
+## v2.0.0-rc.1
+
+- Promoted the complete 22-phase Guildmasters foundation to a release candidate.
+- Added a dedicated roadmap audit covering every phase, catalog, core interaction, save-repair path, and release presentation contract.
+- The release candidate is functionally verified by five regression/feature smoke suites plus the roadmap audit.
+- Final v2.0.0 still requires manual browser QA, balance review, and final art/audio decisions.
 
 ## v1.3.0
 

@@ -16,6 +16,8 @@ The v1.2 suite additionally covers multi-round combat transcripts, temporary sta
 
 The v1.3 suite covers bespoke boss phases, story decisions, rival heat and rumor pressure, world threat, and save repair for authored endgame progress.
 
+The roadmap audit verifies all 22 phase entries, core content catalogs, representative gameplay actions, UI release markers, package scripts, and save repair together.
+
 ### v1.0 Manual Feature Pass
 
 1. Confirm the command panel shows day, identity, mode, materials, research, influence, and prestige.

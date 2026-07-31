@@ -11,14 +11,16 @@ Guildmasters is a browser-based fantasy guild-management strategy game focused o
 5. Collect gold, reputation, and hero growth.
 6. Upgrade the guild and review the durable Guild Log.
 
-## v1.0 roadmap foundation
+## v2.0.0 Release Candidate
 
-The roadmap foundation now wires all 22 planned phases into one playable dashboard:
+The release candidate wires all 22 planned phases into one playable dashboard:
 
 - Guild and hero progression with classes, skills, traits, morale, injuries, relationships, personal goals, and training.
 - Common, Uncommon, Elite, and Legendary contracts with regions, faction standing, materials, equipment rewards, bosses, and risk tiers.
 - Guildhall rooms, staff, research, crafting, inventory, records, guild identities, game modes, dynamic events, world regions, and faction pledges.
 - Save repair keeps the original v0.2 reliability guarantees while preserving the new systems.
+
+This is a functional release candidate, not a claim that every future art, audio, balance, or authored-content decision is final. The dedicated roadmap audit verifies that all 22 phases are represented, callable, save-safe, and connected to the playable loop.
 
 The current build remains intentionally lightweight: expedition resolution is deterministic from the party and contract data, leaving room for a future tactical combat presentation without replacing the progression spine.
 
@@ -86,6 +88,7 @@ npm run smoke:v10
 npm run smoke:v11
 npm run smoke:v12
 npm run smoke:v13
+npm run smoke:roadmap
 npm run smoke:all
 npm run report:progression
 ```
