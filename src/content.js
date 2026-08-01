@@ -95,19 +95,25 @@ export const RIVAL_GUILDS = [
   { id: 'royal-standard', name: 'The Royal Standard', style: 'Crown-backed champions', requiredGuildLevel: 6, rewardGold: 600, rewardReputation: 9 }
 ];
 
-export const TACTICAL_DRILLS = [
-  { id: 'goblin-skirmish', name: 'Goblin Skirmish', enemy: 'goblins', requiredPower: 20, rewardGold: 30, rewardMaterials: 1 },
-  { id: 'spider-ambush', name: 'Spider Ambush', enemy: 'spiders', requiredPower: 42, rewardGold: 75, rewardMaterials: 3 },
-  { id: 'elemental-breach', name: 'Elemental Breach', enemy: 'elementals', requiredPower: 75, rewardGold: 150, rewardMaterials: 6 },
-  { id: 'undead-vanguard', name: 'Undead Vanguard', enemy: 'undead', requiredPower: 120, rewardGold: 300, rewardMaterials: 10 }
-];
-
 export const COMBAT_ENCOUNTERS = [
   { id: 'goblin-skirmish', name: 'Goblin Skirmish', enemy: 'goblins', enemyHp: 36, enemyAttack: 7, requiredPower: 20, rounds: 4, rewardGold: 30, rewardMaterials: 1 },
   { id: 'spider-ambush', name: 'Spider Ambush', enemy: 'spiders', enemyHp: 72, enemyAttack: 12, requiredPower: 42, rounds: 5, rewardGold: 75, rewardMaterials: 3 },
   { id: 'elemental-breach', name: 'Elemental Breach', enemy: 'elementals', enemyHp: 130, enemyAttack: 18, requiredPower: 75, rounds: 6, rewardGold: 150, rewardMaterials: 6 },
   { id: 'undead-vanguard', name: 'Undead Vanguard', enemy: 'undead', enemyHp: 220, enemyAttack: 25, requiredPower: 120, rounds: 7, rewardGold: 300, rewardMaterials: 10 }
 ];
+
+export const GUILD_IDENTITIES = ['Independent', 'Noble Protectors', 'Ruthless Mercenaries', 'Monster Hunters', 'Arcane Researchers'];
+
+export const HERO_CLASS_CATALOG = [
+  { name: 'Warrior', minPower: 14, maxPower: 22, skills: ['Shield Bash', 'Cleave'], trait: 'Brave' },
+  { name: 'Ranger', minPower: 12, maxPower: 20, skills: ['Aimed Shot', 'Mark Target'], trait: 'Resourceful' },
+  { name: 'Mage', minPower: 10, maxPower: 24, skills: ['Fireball', 'Arcane Shield'], trait: 'Curious' },
+  { name: 'Guardian', minPower: 16, maxPower: 20, skills: ['Taunt', 'Last Stand'], trait: 'Loyal' },
+  { name: 'Rogue', minPower: 13, maxPower: 23, skills: ['Backstab', 'Smoke Bomb'], trait: 'Clever' },
+  { name: 'Cleric', minPower: 11, maxPower: 21, skills: ['Turn Undead', 'Healing Light'], trait: 'Compassionate' }
+];
+
+export const TACTICAL_DRILLS = COMBAT_ENCOUNTERS.map(({ enemyHp, enemyAttack, rounds, ...drill }) => ({ ...drill }));
 
 export const ACHIEVEMENT_CATALOG = [
   { id: 'first-blood', name: 'First Blood', description: 'Win your first tactical encounter.' },
@@ -140,6 +146,8 @@ export const STORY_DECISIONS = [
 ];
 
 export function catalogItem(id) { return ITEM_CATALOG.find(item => item.id === id) || null; }
+export function catalogHeroClass(name) { return HERO_CLASS_CATALOG.find(profile => profile.name === name) || null; }
+export function catalogEnemy(id) { return ENEMY_CATALOG.find(enemy => enemy.id === id) || null; }
 export function catalogRoom(id) { return ROOM_CATALOG.find(room => room.id === id) || null; }
 export function catalogFaction(id) { return FACTION_CATALOG.find(faction => faction.id === id) || null; }
 export function catalogRegion(id) { return REGION_CATALOG.find(region => region.id === id) || null; }

@@ -6,6 +6,7 @@ import { loadGame, resetGame, saveGame } from './saveSystem.js';
 import { initQuickNavigation } from './navigation.js';
 import { render } from './ui.js';
 import { catalogItem } from './content.js';
+import { markAction, reportAction } from './actionResult.js';
 
 let state = loadGame();
 const previousLastSeen = state.lastSeenAt;
@@ -39,10 +40,20 @@ const actions = {
   supportFaction(factionId) { state = supportFaction(state, factionId); saveAndRender(); },
   setGuildIdentity(identity) { state = setGuildIdentity(state, identity); saveAndRender(); },
   setMode(modeId) { state = setMode(state, modeId); saveAndRender(); },
-  saveGame() { saveGame(state); state.statusMessage = 'Guild saved safely.'; render(state, actions); },
+  saveGame() {
+    const result = saveGame(state);
+    reportAction(state, result.reason, Date.now(), result.ok);
+    render(state, actions);
+  },
   resetGame() {
     if (!confirm('Reset Guildmasters progress?')) return;
-    state = resetGame();
+    const result = resetGame();
+    if (!result.ok) {
+      reportAction(state, result.reason, Date.now(), false);
+      render(state, actions);
+      return;
+    }
+    state = result.state;
     state = bootstrapFoundation(state);
     saveAndRender();
   }
@@ -50,7 +61,11 @@ const actions = {
 
 function saveAndRender() {
   state = resolveContracts(state);
-  saveGame(state);
+  const result = saveGame(state);
+  if (!result.ok) {
+    state.statusMessage = result.reason;
+    markAction(state, false, result.reason);
+  }
   render(state, actions);
 }
 

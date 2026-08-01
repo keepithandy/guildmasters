@@ -21,6 +21,6 @@ jobs:
       - name: Install from lockfile
         run: npm ci
       - name: Run playable-loop smoke
-        run: npm run smoke
+        run: npm run smoke:all
       - name: Generate read-only progression report
         run: npm run report:progression

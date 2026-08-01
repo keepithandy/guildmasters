@@ -54,6 +54,18 @@ The v1.2 suite additionally covers multi-round combat transcripts, temporary sta
 
 The v1.3 suite covers bespoke boss phases, story decisions, rival heat and rumor pressure, world threat, and save repair for authored endgame progress.
 
+### System Hotfix Regression Testing
+
+Run `npm run smoke:hotfix` after changing recruitment, dynamic events, browser persistence, state repair, equipment validation, active assignments, or enemy weaknesses.
+
+The hotfix suite verifies that wandering-hero recruitment charges one 80g cost and resolves atomically, failed storage writes preserve timestamps, failed resets preserve live state, Cleric remains available as the undead counter, and malformed duplicate hero IDs are detected by state invariants.
+
+### Structured Code-Quality Regression Testing
+
+Run `npm run smoke:quality` after changing system boundaries, authored catalogs, morale calculations, event costs, combat status effects, state repair, compatibility exports, or activity-log behavior.
+
+The quality suite verifies zero-morale arithmetic and display, combat cleanup after defeat, transactional paid events, faction validation, deterministic ID collision handling, persistence timestamp ownership, stale-catalog repair, repaired room capacity, campaign repair, catalog cross-references, inventory normalization, and capped-log ID uniqueness.
+
 The roadmap audit verifies all 22 phase entries, core content catalogs, representative gameplay actions, UI release markers, package scripts, and save repair together.
 
 ### v1.0 Manual Feature Pass

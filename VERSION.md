@@ -2,6 +2,18 @@
 
 Current version: v2.0.0-rc.3
 
+Hotfix status: unreleased
+
+## Unreleased hotfix
+
+- Fixed the wandering-hero recruitment event so “Offer a place” recruits a generated hero instead of training the first existing hero.
+- Made event recruitment transactional with one authored cost.
+- Prevented local-storage save and reset failures from crashing the game UI or reporting false success.
+- Added the Cleric class and undead counter, consistent action outcomes, state invariants, focused system/state modules, and hotfix regression coverage.
+- Fixed zero-morale handling, transactional paid events, defeat-effect cleanup, browser-storage recovery, and Greenwood Rescue threat metadata.
+- Hardened schema-5 repair against stale catalog references, obsolete assignments, duplicate stacks and IDs, and inconsistent campaign state.
+- Added authored-catalog validation and a structured code-quality regression suite.
+
 Current phase: 22-phase release candidate quality-of-life verification
 
 Current target: complete manual browser QA, balance tuning, and final presentation polish before v2.0.0 final

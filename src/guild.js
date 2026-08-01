@@ -1,7 +1,8 @@
-import { appendLog, updateRecord } from './gameState.js';
-import { ROOM_CATALOG, catalogRoom } from './content.js';
+import { updateRecord } from './gameState.js';
+import { GUILD_IDENTITIES, ROOM_CATALOG, catalogRoom } from './content.js';
 import { addInventory } from './heroes.js';
 import { isContractUnlocked, nextContractUnlock } from './contracts.js';
+import { reportAction } from './actionResult.js';
 
 export function guildUpgradeCost(state) { return state.guild.level * 150; }
 export function canUpgradeGuild(state) { return state.guild.gold >= guildUpgradeCost(state); }
@@ -13,7 +14,7 @@ export function guildUpgradeBlockedReason(state) {
 
 export function upgradeGuild(state, now = Date.now()) {
   const cost = guildUpgradeCost(state);
-  if (!canUpgradeGuild(state)) return setGuildMessage(state, guildUpgradeBlockedReason(state), now);
+  if (!canUpgradeGuild(state)) return setGuildMessage(state, guildUpgradeBlockedReason(state), now, false);
   const previousNextUnlock = nextContractUnlock(state);
   state.guild.gold -= cost;
   state.guild.level += 1;
@@ -38,11 +39,11 @@ export function canUpgradeRoom(state, roomId) {
 
 export function upgradeRoom(state, roomId, now = Date.now()) {
   const room = catalogRoom(roomId);
-  if (!room) return state;
+  if (!room) return setGuildMessage(state, 'That guild room could not be found.', now, false);
   const currentLevel = Number(state.rooms?.[roomId]) || 0;
-  if (currentLevel >= room.maxLevel) return setGuildMessage(state, `${room.name} is fully upgraded.`, now);
+  if (currentLevel >= room.maxLevel) return setGuildMessage(state, `${room.name} is fully upgraded.`, now, false);
   const cost = roomUpgradeCost(state, roomId);
-  if (state.guild.gold < cost) return setGuildMessage(state, `${room.name} upgrade needs ${cost} gold.`, now);
+  if (state.guild.gold < cost) return setGuildMessage(state, `${room.name} upgrade needs ${cost} gold.`, now, false);
   state.guild.gold -= cost;
   state.rooms[roomId] = currentLevel + 1;
   if (room.effect === 'capacity') state.guild.heroCapacity += 1;
@@ -51,19 +52,18 @@ export function upgradeRoom(state, roomId, now = Date.now()) {
 }
 
 export function buyItem(state, item, now = Date.now()) {
-  if (!item || state.guild.gold < item.cost) return setGuildMessage(state, `The guild needs ${item?.cost || 0} gold to buy that item.`, now);
+  if (!item || state.guild.gold < item.cost) return setGuildMessage(state, `The guild needs ${item?.cost || 0} gold to buy that item.`, now, false);
   state.guild.gold -= item.cost;
   addInventory(state, item.id, 1, now);
   return setGuildMessage(state, `${item.name} added to the Armory.`, now);
 }
 
 export function setGuildIdentity(state, identity, now = Date.now()) {
-  const allowed = ['Independent', 'Noble Protectors', 'Ruthless Mercenaries', 'Monster Hunters', 'Arcane Researchers'];
-  if (!allowed.includes(identity)) return state;
+  if (!GUILD_IDENTITIES.includes(identity)) return setGuildMessage(state, 'That guild identity is unavailable.', now, false);
   state.guild.identity = identity;
   return setGuildMessage(state, `Guild identity set to ${identity}.`, now);
 }
 
-function setGuildMessage(state, message, now) { state.statusMessage = message; appendLog(state, message, now); return state; }
+function setGuildMessage(state, message, now, ok = true) { return reportAction(state, message, now, ok); }
 
 export { ROOM_CATALOG };
