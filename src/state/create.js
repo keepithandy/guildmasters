@@ -1,4 +1,4 @@
-export const GAME_VERSION = '2.0.0-rc.3';
+export const GAME_VERSION = '2.0.0-rc.4';
 export const SAVE_SCHEMA_VERSION = 5;
 
 export function createNewGameState(now = Date.now()) {

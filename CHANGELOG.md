@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased hotfix
+## v2.0.0-rc.4
 
 - Fixed the wandering-hero recruitment event so “Offer a place” recruits a generated hero instead of training the first existing hero.
 - Made event recruitment transactional and charged its authored 80g cost exactly once.

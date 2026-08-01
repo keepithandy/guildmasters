@@ -1,6 +1,6 @@
 # Guildmasters Test Plan
 
-## v2.0.0-rc.3 QoL Validation
+## v2.0.0-rc.4 Hotfix and QoL Validation
 
 Run the dedicated QoL audit:
 

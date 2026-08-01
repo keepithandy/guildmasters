@@ -1,10 +1,10 @@
 # Version
 
-Current version: v2.0.0-rc.3
+Current version: v2.0.0-rc.4
 
-Hotfix status: unreleased
+Hotfix status: released
 
-## Unreleased hotfix
+## v2.0.0-rc.4
 
 - Fixed the wandering-hero recruitment event so “Offer a place” recruits a generated hero instead of training the first existing hero.
 - Made event recruitment transactional with one authored cost.
@@ -18,9 +18,9 @@ Current phase: 22-phase release candidate quality-of-life verification
 
 Current target: complete manual browser QA, balance tuning, and final presentation polish before v2.0.0 final
 
-Package version: `2.0.0-rc.3`.
+Package version: `2.0.0-rc.4`.
 
-Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.3`.
+Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.4`.
 
 ## v2.0.0-rc.3
 
