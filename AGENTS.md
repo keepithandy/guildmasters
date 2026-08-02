@@ -10,6 +10,7 @@ Guildmasters is a browser-based game using native ES modules. Keep gameplay stat
 - Run the focused smoke suite and the full smoke command when the environment permits.
 - Preserve save schema compatibility unless a change explicitly requires a migration.
 - Treat save loading and saving as untrusted boundaries: malformed data or browser storage failures must not crash the game.
+- Keep background persistence dirty-state based; flush pending changes on page visibility loss and pagehide without adding unconditional storage-write loops.
 - Keep `src/systems.js` and `src/gameState.js` as stable compatibility entrypoints; place new implementation in their focused submodules.
 - Use canonical domain operations for actions triggered from multiple surfaces, including direct UI actions and guild events.
 - Preserve transactional behavior: validate affordability and capacity before mutating resources or resolving an event.

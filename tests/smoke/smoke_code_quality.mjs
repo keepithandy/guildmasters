@@ -5,7 +5,66 @@ import { resolveContracts } from '../../src/contracts.js';
 import { MAX_LOG_ENTRIES, appendLog, createNewGameState, repairGameState } from '../../src/gameState.js';
 import { recruitHero } from '../../src/heroes.js';
 import { validateCatalogs, validateGameState } from '../../src/invariants.js';
+import { createPersistenceLifecycle } from '../../src/persistenceLifecycle.js';
 import { advanceDay, chooseEvent, runCombatEncounter, supportFaction } from '../../src/systems.js';
+
+const listeners = new Map();
+const timerCalls = [];
+const fakeTarget = {
+  document: { visibilityState: 'visible' },
+  addEventListener(type, listener) { listeners.set(type, listener); },
+  removeEventListener(type) { listeners.delete(type); }
+};
+const fakeTimer = {
+  setInterval(callback, delay) { timerCalls.push({ callback, delay }); return 1; },
+  clearInterval(id) { assert.equal(id, 1, 'lifecycle clears its registered timer'); }
+};
+let persistenceSaves = 0;
+let persistenceRenders = 0;
+let persistenceChanged = false;
+let persistenceShouldFail = false;
+const lifecycle = createPersistenceLifecycle({
+  resolveState() { return { changed: persistenceChanged }; },
+  saveState() {
+    persistenceSaves += 1;
+    return { ok: !persistenceShouldFail, reason: 'test save' };
+  },
+  renderState() { persistenceRenders += 1; },
+  eventTarget: fakeTarget,
+  timerTarget: fakeTimer,
+  intervalMs: 1000
+});
+
+assert.equal(lifecycle.flush(), null, 'clean persistence does not write on a polling tick');
+lifecycle.markDirty();
+assert.equal(lifecycle.flush().ok, true, 'dirty persistence writes successfully');
+assert.equal(persistenceSaves, 1, 'dirty persistence writes once');
+assert.equal(persistenceRenders, 1, 'dirty persistence renders after saving');
+lifecycle.start();
+assert.equal(timerCalls.length, 1, 'lifecycle starts one polling timer');
+assert.equal(timerCalls[0].delay, 1000, 'lifecycle uses the one-second contract resolution interval');
+timerCalls[0].callback();
+assert.equal(persistenceSaves, 1, 'clean polling does not rewrite the save');
+assert.equal(persistenceRenders, 1, 'clean polling does not rerender the dashboard');
+persistenceChanged = true;
+timerCalls[0].callback();
+assert.equal(persistenceSaves, 2, 'resolved background state is persisted');
+assert.equal(persistenceRenders, 2, 'resolved background state rerenders the dashboard');
+persistenceChanged = false;
+fakeTarget.document.visibilityState = 'hidden';
+listeners.get('visibilitychange')();
+assert.equal(persistenceSaves, 3, 'hiding the page flushes persistence');
+listeners.get('pagehide')();
+assert.equal(persistenceSaves, 4, 'pagehide flushes persistence');
+persistenceShouldFail = true;
+lifecycle.markDirty();
+assert.equal(lifecycle.flush().ok, false, 'failed lifecycle saves report failure');
+assert.equal(lifecycle.isDirty(), true, 'failed lifecycle saves remain dirty for retry');
+persistenceShouldFail = false;
+lifecycle.flush();
+assert.equal(lifecycle.isDirty(), false, 'successful retry clears dirty state');
+lifecycle.stop();
+assert.equal(listeners.size, 0, 'stopping lifecycle removes browser listeners');
 
 function testHero(id, overrides = {}) {
   return { id, name: id, className: 'Warrior', level: 1, power: 1, experience: 0, morale: 75, status: 'idle', traits: [], skills: [], equipment: { weapon: '', offhand: '', armor: '', charm: '' }, injuries: [], statusEffects: [], relationships: {}, personalGoal: 'Test the guild.', ...overrides };

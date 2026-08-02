@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased hotfix
+
+- Replaced the unconditional one-second save and render loop with dirty-state persistence that still resolves completed contracts in the background.
+- Flush pending state when the page becomes hidden or is being unloaded, and retain dirty state after failed saves so a later retry can recover.
+- Added persistence lifecycle regression coverage while preserving save schema `5`.
+
 ## v2.0.0-rc.4
 
 - Fixed the wandering-hero recruitment event so “Offer a place” recruits a generated hero instead of training the first existing hero.

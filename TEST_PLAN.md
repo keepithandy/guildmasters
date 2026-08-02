@@ -10,6 +10,23 @@ npm run smoke:qol
 
 The audit verifies the persistent command bar, activity center, remembered dashboard preferences, hero and contract filters, recommended assignment actions, unlock disclosures, compact density, and the unchanged save schema.
 
+## Unreleased Persistence Lifecycle Hotfix
+
+Run both persistence-related suites:
+
+```bash
+npm run smoke:hotfix
+npm run smoke:quality
+```
+
+The regression coverage verifies that clean background polling does not rewrite storage or rerender the dashboard, completed contracts still persist when resolved in the background, visibility loss and pagehide flush pending state, and failed writes remain eligible for retry. Save schema `5` remains unchanged.
+
+Manual browser checks:
+
+1. Start a contract, switch the tab away, return after its deadline, and confirm the completion is reflected and survives reload.
+2. Make a state-changing action, background the tab, and confirm the latest state survives closing and reopening the page.
+3. Temporarily deny browser storage access, trigger a save, restore access, and confirm a later action can persist successfully.
+
 Manual QoL checks:
 
 1. Collapse and pin a dashboard panel, reload, and confirm both choices persist.

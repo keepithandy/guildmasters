@@ -2,7 +2,13 @@
 
 Current version: v2.0.0-rc.4
 
-Hotfix status: released
+Hotfix status: unreleased
+
+## Unreleased hotfix
+
+- Replaced unconditional background save and render calls with dirty-state persistence.
+- Flushes pending changes on browser visibility loss and pagehide, with retry-safe handling for failed writes.
+- Preserves save-state schema `5`.
 
 ## v2.0.0-rc.4
 

@@ -101,7 +101,7 @@ npm run smoke:all
 npm run report:progression
 ```
 
-GitHub Actions runs the same smoke and report commands on pull requests and `main`. The smoke covers save repair, reload timing, double assignment, deterministic success/failure boundaries, transactional event costs, storage failures, catalog and state invariants, morale boundaries, temporary combat cleanup, class counters, activity-log integrity, partial failure rewards, live-region copy, mobile layout contracts, quick-navigation targets, and QoL preference wiring.
+GitHub Actions runs the same smoke and report commands on pull requests and `main`. The smoke covers save repair, reload timing, dirty-state persistence, visibility/pagehide save flushing, double assignment, deterministic success/failure boundaries, transactional event costs, storage failures, catalog and state invariants, morale boundaries, temporary combat cleanup, class counters, activity-log integrity, partial failure rewards, live-region copy, mobile layout contracts, quick-navigation targets, and QoL preference wiring.
 
 The progression report prints the current recruit cost and contract table, and flags unreachable, non-positive, or obvious reward/cost discontinuities. It is read-only analysis and does not claim automatic balance correctness.
 
