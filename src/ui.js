@@ -3,20 +3,24 @@ import { canUpgradeGuild, guildUpgradeBlockedReason, guildUpgradeCost, canUpgrad
 import { canRecruitHero, heroTotalPower, RECRUIT_COST, recruitPowerBonus, recruitmentBlockedReason } from './heroes.js';
 import { ACHIEVEMENT_CATALOG, BOSS_ENCOUNTERS, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, STORY_DECISIONS, catalogChapter, catalogEvent, catalogItem } from './content.js';
 import { loadPreferences, updatePreferences } from './preferences.js';
+import { partyUnavailableReason, repairPartySelection } from './partySelection.js';
 
 let notificationsOpen = false;
+let completionTicker = null;
 
 export function render(state, actions) {
   const root = document.getElementById('app');
   if (!root) return;
+  const uiState = actions.getUiState?.() || {};
   const nextUnlock = nextContractUnlock(state);
   const recruitReason = recruitmentBlockedReason(state);
   const upgradeReason = guildUpgradeBlockedReason(state);
   const preferences = loadPreferences();
   root.dataset.density = preferences.density;
   root.innerHTML = `
-    ${renderCommandBar(state, preferences)}
+    ${renderCommandBar(state, preferences, uiState)}
     <p id="guildStatus" class="status-banner" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(state.statusMessage || 'Guild ready.')}</p>
+    ${renderSaveRecovery(state, uiState)}
     ${renderGuildPanel(state, nextUnlock, upgradeReason)}
     ${renderOfflinePanel(state)}
     ${renderCampaignPanel(state)}
@@ -37,27 +41,38 @@ export function render(state, actions) {
     ${renderArmoryPanel(state)}
     ${renderRecordsPanel(state)}
     ${renderLogPanel(state)}
+    ${renderMobileTray()}
+    ${renderShortcutHelp(uiState)}
+    ${renderImportDialog(uiState)}
+    <input id="saveImportInput" type="file" accept="application/json,.json" hidden>
   `;
   bindActions(root, actions);
   decorateDashboard(root, actions, preferences);
+  refreshCompletionTimers(root);
 }
 
-function renderCommandBar(state, preferences) {
+function renderCommandBar(state, preferences, uiState) {
   const unreadCount = state.log.filter(entry => Number(entry?.timestamp) > Number(preferences.notificationsReadAt || 0)).length;
   const recentEntries = state.log.slice(0, 8);
   return `<section id="command-bar" class="command-bar" data-density="${escapeHtml(preferences.density)}" aria-label="Guild at a glance">
     <div class="command-bar-heading"><p class="eyebrow">At a glance</p><strong>Day ${state.guild.day}</strong><span>${state.heroes.filter(hero => hero.status === 'idle').length} idle heroes • ${state.activeContracts.length} expeditions away</span></div>
     <div class="command-resources" aria-label="Guild resources"><span>Gold<strong>${state.guild.gold}</strong></span><span>Rep<strong>${state.guild.reputation}</strong></span><span>Materials<strong>${state.guild.materials}</strong></span><span>Influence<strong>${state.guild.influence}</strong></span></div>
-    <div class="command-bar-actions"><button data-action="advanceDay">Begin Day ${state.guild.day + 1}</button><button data-action="saveGame" class="secondary-action">Save</button><button data-ui-action="toggleNotifications" class="notification-trigger secondary-action" aria-expanded="${notificationsOpen}" aria-controls="notificationCenter">Alerts <span class="notification-count ${unreadCount ? 'has-unread' : ''}">${unreadCount}</span></button><label class="density-control">View<select data-ui-control="density" aria-label="Display density"><option value="comfortable" ${preferences.density === 'comfortable' ? 'selected' : ''}>Comfortable</option><option value="compact" ${preferences.density === 'compact' ? 'selected' : ''}>Compact</option></select></label></div>
+    <div class="command-bar-actions"><button data-action="advanceDay">Begin Day ${state.guild.day + 1}</button><button data-action="saveGame" class="secondary-action" title="Alt+S">Save</button><span class="save-indicator ${saveStatusClass(uiState.saveStatus)}" role="status" aria-live="polite">${escapeHtml(uiState.saveStatus || 'Saved')}</span><button data-ui-action="exportSave" class="text-action">Export</button><button data-ui-action="openImport" class="text-action">Import</button><button data-ui-action="toggleShortcutHelp" class="text-action" title="?">Shortcuts</button><button data-ui-action="toggleNotifications" class="notification-trigger secondary-action" aria-expanded="${notificationsOpen}" aria-controls="notificationCenter">Alerts <span class="notification-count ${unreadCount ? 'has-unread' : ''}">${unreadCount}</span></button><label class="density-control">View<select data-ui-control="density" aria-label="Display density"><option value="comfortable" ${preferences.density === 'comfortable' ? 'selected' : ''}>Comfortable</option><option value="compact" ${preferences.density === 'compact' ? 'selected' : ''}>Compact</option></select></label></div>
     <div id="notificationCenter" class="notification-center" ${notificationsOpen ? '' : 'hidden'}><div class="notification-heading"><strong>Recent activity</strong><button data-ui-action="markNotificationsRead" class="text-action">Mark read</button></div>${recentEntries.length ? `<ul>${recentEntries.map(entry => `<li><span>${escapeHtml(entry.message)}</span><small>${formatRelativeTime(entry.timestamp)}</small></li>`).join('')}</ul>` : '<p class="empty-copy">No activity yet.</p>'}<button data-ui-action="openLog" class="text-action">Open Guild Log</button></div>
   </section>`;
+}
+
+function renderSaveRecovery(state, uiState) {
+  const retry = uiState.saveStatus === 'Save failed' || state.lastAction?.retryAction === 'retrySave';
+  const undo = uiState.undoPreferences?.expiresAt > Date.now();
+  return `<div class="qol-recovery-row">${retry ? '<button data-ui-action="retrySave" class="secondary-action">Retry save</button>' : ''}${undo ? '<button data-ui-action="undoPreference" class="text-action">Undo view change</button>' : ''}</div>`;
 }
 
 function renderGuildPanel(state, nextUnlock, upgradeReason) {
   const records = state.guild.records || {};
   return `<section id="guild-overview" class="panel guild-panel" tabindex="-1">
     <div class="panel-title-row"><div><p class="eyebrow">Guild command</p><h2>${escapeHtml(state.guild.name)}</h2></div><div class="button-row inline-actions">
-      <button data-action="upgradeGuild" ${canUpgradeGuild(state) ? '' : 'disabled'}>Upgrade Guild (${guildUpgradeCost(state)}g)</button>
+      <button data-action="upgradeGuild" data-confirm="Upgrade the guild for ${guildUpgradeCost(state)} gold. This permanently spends gold and raises hero capacity." ${canUpgradeGuild(state) ? '' : 'disabled'}>Upgrade Guild (${guildUpgradeCost(state)}g)</button>
       <button data-action="advanceDay">Begin Day ${state.guild.day + 1}</button>
       <button data-action="saveGame">Save</button>
     </div></div>
@@ -72,7 +87,7 @@ function renderGuildPanel(state, nextUnlock, upgradeReason) {
 
 function renderEventPanel(state) {
   return `<section id="guild-events" class="panel event-panel" tabindex="-1"><div class="panel-title-row"><h2>Guild Events</h2><span class="badge">${state.events.length} waiting</span></div>
-    ${state.events.length ? `<div class="card-list">${state.events.map(active => { const event = catalogEvent(active.eventId); return event ? `<article class="card event-card"><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(event.description)}</p><div class="button-row">${event.options.map(option => `<button data-action="event" data-event-id="${escapeHtml(event.id)}" data-option-id="${escapeHtml(option.id)}">${escapeHtml(option.label)}</button>`).join('')}</div></article>` : ''; }).join('')}</div>` : '<p class="empty-copy">No urgent events. Begin another day to see what the world brings.</p>'}
+    ${state.events.length ? `<div class="card-list">${state.events.map(active => { const event = catalogEvent(active.eventId); return event ? `<article class="card event-card"><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(event.description)}</p><div class="button-row">${event.options.map(option => `<button data-action="event" data-event-id="${escapeHtml(event.id)}" data-option-id="${escapeHtml(option.id)}" data-confirm="${escapeHtml(eventOutcome(option))}">${escapeHtml(option.label)} <small>${escapeHtml(eventOutcome(option))}</small></button>`).join('')}</div></article>` : ''; }).join('')}</div>` : '<p class="empty-copy">No urgent events. Begin another day to see what the world brings.</p>'}
   </section>`;
 }
 
@@ -99,20 +114,22 @@ function renderHeroPanel(state, recruitReason) {
   const heroFilter = preferences.heroFilter || 'all';
   const heroSort = preferences.heroSort || 'recommended';
   const visibleHeroes = sortHeroes(filterHeroes(state.heroes, heroFilter), heroSort);
+  const selected = repairPartySelection(preferences.partyHeroIds, state.heroes);
   return `<section id="heroes" class="panel hero-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Roster and relationships</p><h2>Heroes <span class="section-count">${visibleHeroes.length}/${state.heroes.length}</span></h2></div><button data-action="recruitHero" ${canRecruitHero(state) ? '' : 'disabled'}>Recruit Hero (${RECRUIT_COST}g)</button></div>
     <p class="helper-text">Recruit bonus: +${recruitPowerBonus(state)} power. Training, traits, skills, morale, equipment, injuries, and personal goals shape every expedition.</p>
     ${recruitReason ? `<p class="blocked-copy">${escapeHtml(recruitReason)}</p>` : ''}
-    <div class="qol-toolbar"><label>Show<select data-ui-control="heroFilter" aria-label="Filter heroes"><option value="all" ${heroFilter === 'all' ? 'selected' : ''}>All heroes</option><option value="idle" ${heroFilter === 'idle' ? 'selected' : ''}>Idle</option><option value="deployed" ${heroFilter === 'deployed' ? 'selected' : ''}>On contract</option><option value="injured" ${heroFilter === 'injured' ? 'selected' : ''}>Injured</option></select></label><label>Sort<select data-ui-control="heroSort" aria-label="Sort heroes"><option value="recommended" ${heroSort === 'recommended' ? 'selected' : ''}>Recommended</option><option value="power" ${heroSort === 'power' ? 'selected' : ''}>Power</option><option value="level" ${heroSort === 'level' ? 'selected' : ''}>Level</option><option value="morale" ${heroSort === 'morale' ? 'selected' : ''}>Morale</option><option value="name" ${heroSort === 'name' ? 'selected' : ''}>Name</option></select></label></div>
-    <div class="card-list">${visibleHeroes.length ? visibleHeroes.map(hero => renderHero(state, hero)).join('') : state.heroes.length ? '<p class="empty-copy">No heroes match this view.</p>' : '<p class="empty-copy">No heroes yet. Recruit your first hero when you have an open slot and enough gold.</p>'}</div>
+    <div class="qol-toolbar"><label>Show<select data-ui-control="heroFilter" aria-label="Filter heroes"><option value="all" ${heroFilter === 'all' ? 'selected' : ''}>All heroes</option><option value="idle" ${heroFilter === 'idle' ? 'selected' : ''}>Idle</option><option value="deployed" ${heroFilter === 'deployed' ? 'selected' : ''}>On contract</option><option value="injured" ${heroFilter === 'injured' ? 'selected' : ''}>Injured</option></select></label><label>Sort<select data-ui-control="heroSort" aria-label="Sort heroes"><option value="recommended" ${heroSort === 'recommended' ? 'selected' : ''}>Recommended</option><option value="power" ${heroSort === 'power' ? 'selected' : ''}>Power</option><option value="level" ${heroSort === 'level' ? 'selected' : ''}>Level</option><option value="morale" ${heroSort === 'morale' ? 'selected' : ''}>Morale</option><option value="name" ${heroSort === 'name' ? 'selected' : ''}>Name</option></select></label><button data-ui-action="selectVisibleHeroes" class="text-action">Select all visible</button><button data-ui-action="clearRosterSelection" class="text-action">Clear selection</button><button data-ui-action="bulkTrain" class="text-action" data-confirm="Train selected idle heroes for their exact combined cost?">Train selected</button></div>
+    <div class="card-list">${visibleHeroes.length ? visibleHeroes.map(hero => renderHero(state, hero, selected)).join('') : state.heroes.length ? '<p class="empty-copy">No heroes match this view.</p>' : '<p class="empty-copy">No heroes yet. Recruit your first hero when you have an open slot and enough gold.</p>'}</div>
   </section>`;
 }
 
-function renderHero(state, hero) {
+function renderHero(state, hero, selected) {
   const equipment = Object.entries(hero.equipment || {}).filter(([, id]) => id).map(([slot, id]) => `${slot}: ${catalogItem(id)?.name || id}`).join(' • ') || 'No equipment equipped';
   const compatibleItems = ITEM_CATALOG.filter(item => item.className === hero.className && state.inventory.some(entry => entry.itemId === item.id && entry.quantity > 0));
+  const unavailable = partyUnavailableReason(hero);
   return `<article class="card hero-card"><div class="card-title-row"><div><h3>${escapeHtml(hero.name)}</h3><p>${escapeHtml(hero.className)} • Level ${hero.level} • ${heroTotalPower(hero)} power</p></div><span class="badge ${hero.status === 'idle' ? 'good' : 'busy'}">${hero.status === 'idle' ? 'Idle' : 'On Contract'}</span></div>
     <p>Morale ${hero.morale ?? 75}% • Traits: ${escapeHtml((hero.traits || []).join(', ') || 'Unproven')}</p><p>Skills: ${escapeHtml((hero.skills || []).join(', ') || 'Learning the trade')}${hero.statusEffects?.length ? ` • Effects: ${escapeHtml(hero.statusEffects.join(', '))}` : ''}</p><p>Gear: ${escapeHtml(equipment)}</p><p class="mini-record">Goal: ${escapeHtml(hero.personalGoal || 'Become a guild veteran.')}${hero.injuries?.length ? ` • Injuries: ${escapeHtml(hero.injuries.join(', '))}` : ''}</p>
-    <div class="button-row"><button data-action="trainHero" data-hero-id="${escapeHtml(hero.id)}" ${hero.status === 'idle' ? '' : 'disabled'}>Train Hero</button>${compatibleItems.map(item => `<button data-action="equipItem" data-hero-id="${escapeHtml(hero.id)}" data-item-id="${escapeHtml(item.id)}">Equip ${escapeHtml(item.name)}</button>`).join('')}</div>
+    <div class="button-row"><label class="roster-select"><input type="checkbox" data-party-id="${escapeHtml(hero.id)}" ${selected.includes(hero.id) ? 'checked' : ''} ${unavailable ? 'disabled' : ''}> Party${unavailable ? ` (${escapeHtml(unavailable)})` : ''}</label><button data-action="trainHero" data-hero-id="${escapeHtml(hero.id)}" data-confirm="Training ${escapeHtml(hero.name)} costs ${20 + (hero.level * 10)} gold and permanently spends it." ${hero.status === 'idle' ? '' : 'disabled'}>Train Hero</button>${compatibleItems.map(item => `<button data-action="equipItem" data-hero-id="${escapeHtml(hero.id)}" data-item-id="${escapeHtml(item.id)}">Equip ${escapeHtml(item.name)}</button>`).join('')}</div>
   </article>`;
 }
 
@@ -134,18 +151,24 @@ function renderContract(state, contract) {
 }
 
 function renderActivePanel(state) {
-  return `<section id="active-expeditions" class="panel active-contracts-panel" tabindex="-1"><div class="panel-title-row"><h2>Active Expeditions</h2><span class="badge">${state.activeContracts.length} away</span></div><div class="card-list">${state.activeContracts.length ? state.activeContracts.map(active => renderActiveContract(state, active)).join('') : '<p class="empty-copy">No contracts running. Assign an idle hero from the Contract Board.</p>'}</div></section>`;
+  const preferences = loadPreferences();
+  const filter = preferences.queueFilter || 'all';
+  const sort = preferences.queueSort || 'remaining';
+  const now = Date.now();
+  const visible = state.activeContracts.filter(active => filter === 'all' || filter === 'ready' ? (filter !== 'ready' || active.completesAt <= now) : active.completesAt > now)
+    .sort((left, right) => sort === 'name' ? String(left.contractId).localeCompare(String(right.contractId)) : left.completesAt - right.completesAt);
+  return `<section id="active-expeditions" class="panel active-contracts-panel" tabindex="-1"><div class="panel-title-row"><h2>Active Expeditions</h2><span class="badge">${state.activeContracts.length} away</span></div><div class="qol-toolbar"><label>Show<select data-ui-control="queueFilter" aria-label="Filter expedition queue"><option value="all">All</option><option value="running" ${filter === 'running' ? 'selected' : ''}>Running</option><option value="ready" ${filter === 'ready' ? 'selected' : ''}>Ready</option></select></label><label>Sort<select data-ui-control="queueSort" aria-label="Sort expedition queue"><option value="remaining" ${sort === 'remaining' ? 'selected' : ''}>Time remaining</option><option value="name" ${sort === 'name' ? 'selected' : ''}>Contract</option></select></label></div><div class="card-list">${visible.length ? visible.map(active => renderActiveContract(state, active)).join('') : '<p class="empty-copy">No expeditions match this view.</p>'}</div></section>`;
 }
 
 function renderActiveContract(state, active) {
   const { hero, contract } = activeContractDetails(state, active);
   if (!hero || !contract) return '';
   const secondsLeft = Math.max(0, Math.ceil((active.completesAt - Date.now()) / 1000));
-  return `<article class="card active-card"><h3>${escapeHtml(contract.name)}</h3><p><strong>${escapeHtml(hero.name)}</strong> is working against ${escapeHtml(contract.enemy || 'unknown threats')}.</p><p aria-label="${secondsLeft} seconds remaining">${secondsLeft}s remaining</p><div class="progress-track"><span style="width:${Math.min(100, Math.max(0, ((Date.now() - active.startedAt) / Math.max(1, active.completesAt - active.startedAt)) * 100))}%"></span></div></article>`;
+  return `<article class="card active-card" data-completes-at="${active.completesAt}" data-started-at="${active.startedAt}"><h3>${escapeHtml(contract.name)}</h3><p><strong>${escapeHtml(hero.name)}</strong> is working against ${escapeHtml(contract.enemy || 'unknown threats')}.</p><p data-remaining aria-label="${secondsLeft} seconds remaining">${secondsLeft}s remaining</p><div class="progress-track"><span data-progress style="width:${Math.min(100, Math.max(0, ((Date.now() - active.startedAt) / Math.max(1, active.completesAt - active.startedAt)) * 100))}%"></span></div></article>`;
 }
 
 function renderGuildhallPanel(state) {
-  return `<section id="guildhall" class="panel guildhall-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Facilities and staff</p><h2>Guildhall</h2></div><span class="badge">${Object.keys(state.rooms).length} rooms</span></div><div class="card-list">${ROOM_CATALOG.map(room => { const level = state.rooms[room.id] || 0; const maxed = level >= room.maxLevel; const cost = roomUpgradeCost(state, room.id); return `<article class="card"><div class="card-title-row"><h3>${escapeHtml(room.name)}</h3><span class="badge">Lv ${level}/${room.maxLevel}</span></div><p>${escapeHtml(room.description)}</p><button data-action="upgradeRoom" data-room-id="${escapeHtml(room.id)}" ${maxed || !canUpgradeRoom(state, room.id) ? 'disabled' : ''}>${maxed ? 'Fully upgraded' : `Upgrade (${cost}g)`}</button></article>`; }).join('')}</div></section>`;
+  return `<section id="guildhall" class="panel guildhall-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Facilities and staff</p><h2>Guildhall</h2></div><span class="badge">${Object.keys(state.rooms).length} rooms</span></div><div class="card-list">${ROOM_CATALOG.map(room => { const level = state.rooms[room.id] || 0; const maxed = level >= room.maxLevel; const cost = roomUpgradeCost(state, room.id); return `<article class="card"><div class="card-title-row"><h3>${escapeHtml(room.name)}</h3><span class="badge">Lv ${level}/${room.maxLevel}</span></div><p>${escapeHtml(room.description)}</p><button data-action="upgradeRoom" data-room-id="${escapeHtml(room.id)}" data-confirm="Upgrade ${escapeHtml(room.name)} for ${cost} gold. This permanently spends gold." ${maxed || !canUpgradeRoom(state, room.id) ? 'disabled' : ''}>${maxed ? 'Fully upgraded' : `Upgrade (${cost}g)`}</button></article>`; }).join('')}</div></section>`;
 }
 
 function renderWorldPanel(state) {
@@ -162,14 +185,19 @@ function renderRivalPanel(state) {
 }
 
 function renderTacticalPanel(state) {
-  const idleCount = state.heroes.filter(hero => hero.status === 'idle').length;
+  const party = selectedParty(state);
   const last = state.combat?.lastEncounter;
-  return `<section id="tactical-encounters" class="panel tactical-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Expedition preparation</p><h2>Tactical Encounters</h2></div><span class="badge">${state.tactical.encountersWon} wins</span></div><p class="helper-text">Multi-round encounters use all idle heroes as a temporary party. Class abilities create guards, marks, burns, taunts, and evasive openings.</p>${last ? `<p class="mini-record">Last encounter: ${escapeHtml(last.name)} • ${escapeHtml(last.result)} in ${last.rounds} rounds.</p>` : ''}<div class="card-list">${COMBAT_ENCOUNTERS.map(encounter => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(encounter.name)}</h3><span class="badge">${encounter.enemyHp} HP</span></div><p>Enemy: ${escapeHtml(encounter.enemy)} • ${encounter.rounds} rounds • Reward: ${encounter.rewardGold}g and ${encounter.rewardMaterials} materials.</p><button data-action="runTacticalDrill" data-drill-id="${escapeHtml(encounter.id)}" ${idleCount === 0 ? 'disabled' : ''}>Run with ${idleCount} idle hero${idleCount === 1 ? '' : 'es'}</button></article>`).join('')}</div></section>`;
+  return `<section id="tactical-encounters" class="panel tactical-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Expedition preparation</p><h2>Tactical Encounters</h2></div><span class="badge">${state.tactical.encountersWon} wins</span></div>${renderPartyBuilder(state, party)}<p class="helper-text">Selected idle heroes form a temporary party; recommended selection uses the three highest-power idle heroes, with names breaking ties.</p>${last ? `<p class="mini-record">Last encounter: ${escapeHtml(last.name)} • ${escapeHtml(last.result)} in ${last.rounds} rounds.</p>` : ''}<div class="card-list">${COMBAT_ENCOUNTERS.map(encounter => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(encounter.name)}</h3><span class="badge">${encounter.enemyHp} HP</span></div><p>Enemy: ${escapeHtml(encounter.enemy)} • ${encounter.rounds} rounds • Reward: ${encounter.rewardGold}g and ${encounter.rewardMaterials} materials.</p><button data-action="runTacticalDrill" data-drill-id="${escapeHtml(encounter.id)}" ${party.length === 0 ? 'disabled' : ''}>Run with ${party.length} selected hero${party.length === 1 ? '' : 'es'}</button></article>`).join('')}</div></section>`;
 }
 
 function renderBossPanel(state) {
-  const idleCount = state.heroes.filter(hero => hero.status === 'idle').length;
-  return `<section id="boss-expeditions" class="panel boss-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Legendary endgame</p><h2>Boss Expeditions</h2></div><span class="badge">${state.bosses.defeated.length}/${BOSS_ENCOUNTERS.length} defeated</span></div><p class="helper-text">Each boss has unique phases, mechanics, requirements, and a persistent defeat record.</p><div class="card-list">${BOSS_ENCOUNTERS.map(boss => { const defeated = state.bosses.defeated.includes(boss.id); const unlocked = state.guild.level >= boss.requiredGuildLevel && state.guild.reputation >= boss.requiredReputation && state.regions.unlocked.includes(boss.region); return `<article class="card ${unlocked ? '' : 'locked-card'}"><div class="card-title-row"><h3>${escapeHtml(boss.name)}</h3><span class="badge">${boss.phases.length} phases</span></div><p>${escapeHtml(boss.description)}</p><p class="mini-record">Requires guild ${boss.requiredGuildLevel} • ${boss.requiredReputation} reputation • ${escapeHtml(boss.region.replaceAll('-', ' '))}</p><button data-action="challengeBoss" data-boss-id="${escapeHtml(boss.id)}" ${!unlocked || idleCount === 0 || defeated ? 'disabled' : ''}>${defeated ? 'Defeated' : `Challenge with ${idleCount} idle heroes`}</button></article>`; }).join('')}</div></section>`;
+  const party = selectedParty(state);
+  return `<section id="boss-expeditions" class="panel boss-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Legendary endgame</p><h2>Boss Expeditions</h2></div><span class="badge">${state.bosses.defeated.length}/${BOSS_ENCOUNTERS.length} defeated</span></div><p class="helper-text">Each boss has unique phases, mechanics, requirements, and a persistent defeat record.</p><div class="card-list">${BOSS_ENCOUNTERS.map(boss => { const defeated = state.bosses.defeated.includes(boss.id); const unlocked = state.guild.level >= boss.requiredGuildLevel && state.guild.reputation >= boss.requiredReputation && state.regions.unlocked.includes(boss.region); return `<article class="card ${unlocked ? '' : 'locked-card'}"><div class="card-title-row"><h3>${escapeHtml(boss.name)}</h3><span class="badge">${boss.phases.length} phases</span></div><p>${escapeHtml(boss.description)}</p><p class="mini-record">Requires guild ${boss.requiredGuildLevel} • ${boss.requiredReputation} reputation • ${escapeHtml(boss.region.replaceAll('-', ' '))}</p><button data-action="challengeBoss" data-boss-id="${escapeHtml(boss.id)}" ${!unlocked || party.length === 0 || defeated ? 'disabled' : ''}>${defeated ? 'Defeated' : `Challenge with ${party.length} selected heroes`}</button></article>`; }).join('')}</div></section>`;
+}
+
+function renderPartyBuilder(state, selected) {
+  const idle = state.heroes.filter(hero => hero.status === 'idle');
+  return `<div class="party-builder" aria-label="Party builder"><div class="button-row"><button data-ui-action="selectIdleParty" class="text-action">Select idle</button><button data-ui-action="recommendParty" class="text-action">Recommended</button><button data-ui-action="clearParty" class="text-action">Clear</button></div><p class="mini-record">${selected.length} selected. ${idle.length ? `Available: ${idle.map(hero => escapeHtml(hero.name)).join(', ')}.` : 'No idle heroes are currently available.'}</p></div>`;
 }
 
 function renderRelationshipPanel(state) {
@@ -183,12 +211,12 @@ function renderAchievementPanel(state) {
 }
 
 function renderProgressionPanel(state) {
-  return `<section id="research-specialists" class="panel progression-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Long-term development</p><h2>Research and Specialists</h2></div><span class="badge">${state.research.length}/${RESEARCH_CATALOG.length} researched</span></div><div class="subsection"><h3>Research</h3><div class="card-list">${RESEARCH_CATALOG.map(project => `<article class="card"><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(project.description)}</p><button data-action="research" data-project-id="${escapeHtml(project.id)}" ${state.research.includes(project.id) || state.guild.researchPoints < project.cost ? 'disabled' : ''}>${state.research.includes(project.id) ? 'Complete' : `Research (${project.cost} pts)`}</button></article>`).join('')}</div></div><div class="subsection"><h3>Guild Staff</h3><div class="card-list">${STAFF_CATALOG.map(staff => `<article class="card"><h3>${escapeHtml(staff.name)}</h3><p>${escapeHtml(staff.description)}</p><button data-action="hireStaff" data-staff-id="${escapeHtml(staff.id)}" ${state.staff.includes(staff.id) || state.guild.gold < staff.cost ? 'disabled' : ''}>${state.staff.includes(staff.id) ? 'Hired' : `Hire (${staff.cost}g)`}</button></article>`).join('')}</div></div></section>`;
+  return `<section id="research-specialists" class="panel progression-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Long-term development</p><h2>Research and Specialists</h2></div><span class="badge">${state.research.length}/${RESEARCH_CATALOG.length} researched</span></div><div class="subsection"><h3>Research</h3><div class="card-list">${RESEARCH_CATALOG.map(project => `<article class="card"><h3>${escapeHtml(project.name)}</h3><p>${escapeHtml(project.description)}</p><button data-action="research" data-project-id="${escapeHtml(project.id)}" data-confirm="Research ${escapeHtml(project.name)} for ${project.cost} points. Points are permanently spent." ${state.research.includes(project.id) || state.guild.researchPoints < project.cost ? 'disabled' : ''}>${state.research.includes(project.id) ? 'Complete' : `Research (${project.cost} pts)`}</button></article>`).join('')}</div></div><div class="subsection"><h3>Guild Staff</h3><div class="card-list">${STAFF_CATALOG.map(staff => `<article class="card"><h3>${escapeHtml(staff.name)}</h3><p>${escapeHtml(staff.description)}</p><button data-action="hireStaff" data-staff-id="${escapeHtml(staff.id)}" data-confirm="Hire ${escapeHtml(staff.name)} for ${staff.cost} gold. This permanently spends gold." ${state.staff.includes(staff.id) || state.guild.gold < staff.cost ? 'disabled' : ''}>${state.staff.includes(staff.id) ? 'Hired' : `Hire (${staff.cost}g)`}</button></article>`).join('')}</div></div></section>`;
 }
 
 function renderArmoryPanel(state) {
   const inventory = state.inventory.map(entry => { const item = catalogItem(entry.itemId); return item ? `<span class="inventory-chip">${escapeHtml(item.name)} ×${entry.quantity}</span>` : ''; }).join('');
-  return `<section id="armory" class="panel armory-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Equipment and crafting</p><h2>Armory & Workshop</h2></div><span class="badge">${state.guild.materials} materials</span></div><p class="helper-text">Inventory: ${inventory || 'No equipment stored yet.'}</p><div class="card-list">${ITEM_CATALOG.map(item => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(item.name)}</h3><span class="badge">${escapeHtml(item.rarity)} • +${item.power}</span></div><p>${escapeHtml(item.className)} • ${escapeHtml(item.slot)} • Buy ${item.cost}g</p><div class="button-row"><button data-action="buyItem" data-item-id="${escapeHtml(item.id)}" ${state.guild.gold < item.cost ? 'disabled' : ''}>Buy</button><button data-action="craftItem" data-item-id="${escapeHtml(item.id)}" ${state.guild.materials < 3 ? 'disabled' : ''}>Craft</button></div></article>`).join('')}</div></section>`;
+  return `<section id="armory" class="panel armory-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Equipment and crafting</p><h2>Armory & Workshop</h2></div><span class="badge">${state.guild.materials} materials</span></div><p class="helper-text">Inventory: ${inventory || 'No equipment stored yet.'}</p><div class="card-list">${ITEM_CATALOG.map(item => `<article class="card"><div class="card-title-row"><h3>${escapeHtml(item.name)}</h3><span class="badge">${escapeHtml(item.rarity)} • +${item.power}</span></div><p>${escapeHtml(item.className)} • ${escapeHtml(item.slot)} • Buy ${item.cost}g</p><div class="button-row"><button data-action="buyItem" data-item-id="${escapeHtml(item.id)}" data-confirm="Buy ${escapeHtml(item.name)} for ${item.cost} gold. Gold is permanently spent." ${state.guild.gold < item.cost ? 'disabled' : ''}>Buy</button><button data-action="craftItem" data-item-id="${escapeHtml(item.id)}" data-confirm="Craft ${escapeHtml(item.name)} for 3 materials. Materials are permanently spent." ${state.guild.materials < 3 ? 'disabled' : ''}>Craft</button></div></article>`).join('')}</div></section>`;
 }
 
 function renderRecordsPanel(state) {
@@ -197,11 +225,15 @@ function renderRecordsPanel(state) {
 }
 
 function renderLogPanel(state) {
-  return `<section id="guild-log" class="panel guild-log-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Durable history</p><h2>Guild Log</h2></div><button data-action="resetGame" class="danger">Reset</button></div><p class="helper-text">Newest events appear first. Every contract, discovery, upgrade, and decision becomes part of the guild’s history.</p><ul class="log-list">${state.log.slice(0, 16).map(renderLogEntry).join('')}</ul></section>`;
+  const preferences = loadPreferences();
+  const filter = preferences.activityFilter || 'all';
+  const visible = state.log.filter(entry => filter === 'all' || activityCategory(entry) === filter).slice(0, 16);
+  return `<section id="guild-log" class="panel guild-log-panel" tabindex="-1"><div class="panel-title-row"><div><p class="eyebrow">Durable history</p><h2>Guild Log</h2></div><button data-action="resetGame" class="danger" data-confirm="Reset permanently removes the stored guild save and cannot be undone.">Reset</button></div><div class="qol-toolbar"><label>Category<select data-ui-control="activityFilter" aria-label="Filter activity"><option value="all">All</option>${['contracts', 'combat', 'recruitment', 'events', 'economy', 'system'].map(category => `<option value="${category}" ${filter === category ? 'selected' : ''}>${category}</option>`).join('')}</select></label></div><p class="helper-text">Newest events appear first. Repeated low-value system messages are condensed without hiding distinct outcomes.</p><ul class="log-list">${visible.map(renderLogEntry).join('')}</ul></section>`;
 }
 
 function bindActions(root, actions) {
   root.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
+    if (button.dataset.confirm && !confirm(button.dataset.confirm)) return;
     const action = button.dataset.action;
     if (action === 'startContract') actions.startContract(button.dataset.heroId, button.dataset.contractId);
     else if (action === 'event') actions.chooseEvent(button.dataset.eventId, button.dataset.optionId);
@@ -233,6 +265,7 @@ function bindActions(root, actions) {
 
 function bindUiActions(root, actions) {
   root.querySelectorAll('[data-ui-action]').forEach(control => control.addEventListener('click', () => {
+    if (control.dataset.confirm && !confirm(control.dataset.confirm)) return;
     const action = control.dataset.uiAction;
     if (action === 'toggleNotifications') notificationsOpen = !notificationsOpen;
     else if (action === 'markNotificationsRead') updatePreferences(preferences => { preferences.notificationsReadAt = Date.now(); });
@@ -244,13 +277,39 @@ function bindUiActions(root, actions) {
         target.focus({ preventScroll: true });
       }
     }
+    else if (action === 'retrySave') return actions.retrySave();
+    else if (action === 'exportSave') return actions.exportSave();
+    else if (action === 'openImport') return root.querySelector('#saveImportInput')?.click();
+    else if (action === 'confirmImport') return actions.confirmImport();
+    else if (action === 'cancelImport') return actions.cancelImport();
+    else if (action === 'toggleShortcutHelp') return actions.toggleShortcutHelp();
+    else if (action === 'focusContracts') return actions.focusContracts();
+    else if (action === 'undoPreference') return actions.undoPreference();
+    else if (action === 'selectIdleParty') return actions.selectIdleParty();
+    else if (action === 'clearParty') return actions.clearParty();
+    else if (action === 'recommendParty') return actions.recommendParty();
+    else if (action === 'selectVisibleHeroes') return actions.setParty([...root.querySelectorAll('[data-party-id]:not(:disabled)')].map(input => input.dataset.partyId));
+    else if (action === 'clearRosterSelection') return actions.setParty([]);
+    else if (action === 'bulkTrain') return actions.bulkTrain([...root.querySelectorAll('[data-party-id]:checked')].map(input => input.dataset.partyId));
     actions.refresh();
   }));
 
   root.querySelectorAll('[data-ui-control]').forEach(control => control.addEventListener('change', () => {
-    updatePreferences(preferences => { preferences[control.dataset.uiControl] = control.value; });
-    actions.refresh();
+    actions.updatePreference(control.dataset.uiControl, control.value);
   }));
+
+  root.querySelectorAll('[data-party-id]').forEach(control => control.addEventListener('change', () => {
+    actions.setParty([...root.querySelectorAll('[data-party-id]:checked')].map(input => input.dataset.partyId));
+  }));
+
+  root.querySelector('#saveImportInput')?.addEventListener('change', event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => actions.importSave(reader.result);
+    reader.onerror = () => actions.importSave('');
+    reader.readAsText(file);
+  });
 }
 
 function decorateDashboard(root, actions, preferences) {
@@ -389,5 +448,39 @@ export function nextActionGuidance(state) {
 }
 
 export function rankHeroesForContract(heroes, contract) { return [...heroes].sort((left, right) => calculateSuccessChance(heroTotalPower(right), contract.requiredPower) - calculateSuccessChance(heroTotalPower(left), contract.requiredPower)); }
-function renderLogEntry(entry) { const message = typeof entry === 'string' ? entry : entry?.message; return `<li>${escapeHtml(message || 'Guild event')}</li>`; }
+function renderLogEntry(entry) { const message = typeof entry === 'string' ? entry : entry?.message; const category = activityCategory(entry); return `<li data-category="${category}"><span class="log-category">${escapeHtml(category)}</span>${escapeHtml(message || 'Guild event')}</li>`; }
+function activityCategory(entry) {
+  const message = String(typeof entry === 'string' ? entry : entry?.message || '').toLowerCase();
+  if (/contract|expedition/.test(message)) return 'contracts';
+  if (/combat|tactical|boss|rival/.test(message)) return 'combat';
+  if (/recruit|hero joined/.test(message)) return 'recruitment';
+  if (/event|mages|merchant|wandering/.test(message)) return 'events';
+  if (/gold|buy|craft|train|upgrade|research|staff/.test(message)) return 'economy';
+  return 'system';
+}
+function eventOutcome(option) {
+  const outcomes = [];
+  if (option.gold) outcomes.push(`${option.gold > 0 ? '+' : ''}${option.gold} gold`);
+  if (option.reputation) outcomes.push(`${option.reputation > 0 ? '+' : ''}${option.reputation} reputation`);
+  if (option.research) outcomes.push(`${option.research > 0 ? '+' : ''}${option.research} research`);
+  return outcomes.length ? outcomes.join(', ') : 'No resource change';
+}
+function saveStatusClass(status) { return status === 'Save failed' ? 'is-failed' : status === 'Saving…' ? 'is-saving' : 'is-saved'; }
+function selectedParty(state) { return repairPartySelection(loadPreferences().partyHeroIds, state.heroes); }
+function renderMobileTray() { return `<nav class="mobile-action-tray" aria-label="Quick actions"><button data-action="saveGame">Save</button><button data-ui-action="focusContracts">Contracts</button><button data-action="recruitHero">Recruit</button></nav>`; }
+function renderShortcutHelp(uiState) { return uiState.shortcutHelpOpen ? `<section class="shortcut-overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts"><div><h2>Keyboard shortcuts</h2><p><kbd>Alt</kbd>+<kbd>S</kbd> Save</p><p><kbd>Alt</kbd>+<kbd>R</kbd> Recruit</p><p><kbd>Alt</kbd>+<kbd>C</kbd> Contract board</p><p><kbd>?</kbd> Close this help</p><button data-ui-action="toggleShortcutHelp">Close</button></div></section>` : ''; }
+function renderImportDialog(uiState) { return uiState.pendingImport ? `<section class="shortcut-overlay" role="dialog" aria-modal="true" aria-label="Confirm imported save"><div><h2>Replace current guild?</h2><p>${escapeHtml(uiState.pendingImport.summary)}</p><p>The imported save was repaired and validated. Confirming replaces the current guild only after browser storage accepts it.</p><button data-ui-action="confirmImport" class="danger">Replace current guild</button><button data-ui-action="cancelImport" class="secondary-action">Cancel</button></div></section>` : ''; }
+function refreshCompletionTimers(root) {
+  const update = () => root.querySelectorAll('[data-completes-at]').forEach(card => {
+    const completesAt = Number(card.dataset.completesAt);
+    const startedAt = Number(card.dataset.startedAt);
+    const seconds = Math.max(0, Math.ceil((completesAt - Date.now()) / 1000));
+    const remaining = card.querySelector('[data-remaining]');
+    const progress = card.querySelector('[data-progress]');
+    if (remaining) { remaining.textContent = seconds ? `${seconds}s remaining` : 'Completing…'; remaining.setAttribute('aria-label', `${seconds} seconds remaining`); }
+    if (progress) progress.style.width = `${Math.min(100, Math.max(0, ((Date.now() - startedAt) / Math.max(1, completesAt - startedAt)) * 100))}%`;
+  });
+  update();
+  if (!completionTicker) completionTicker = setInterval(() => refreshCompletionTimers(document.getElementById('app') || root), 1000);
+}
 function escapeHtml(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;'); }

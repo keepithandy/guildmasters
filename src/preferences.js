@@ -8,6 +8,10 @@ const DEFAULT_PREFERENCES = {
   heroSort: 'recommended',
   contractFilter: 'all',
   contractSort: 'recommended',
+  queueFilter: 'all',
+  queueSort: 'remaining',
+  activityFilter: 'all',
+  partyHeroIds: [],
   notificationsReadAt: 0,
   density: 'comfortable'
 };
@@ -22,7 +26,8 @@ export function loadPreferences() {
       ...parsed,
       collapsedPanels: Array.isArray(parsed.collapsedPanels) ? parsed.collapsedPanels : [],
       pinnedPanels: Array.isArray(parsed.pinnedPanels) ? parsed.pinnedPanels : [],
-      navGroups: parsed.navGroups && typeof parsed.navGroups === 'object' ? parsed.navGroups : {}
+      navGroups: parsed.navGroups && typeof parsed.navGroups === 'object' ? parsed.navGroups : {},
+      partyHeroIds: Array.isArray(parsed.partyHeroIds) ? [...new Set(parsed.partyHeroIds.filter(id => typeof id === 'string'))] : []
     };
   } catch {
     return { ...DEFAULT_PREFERENCES, navGroups: {} };
@@ -30,11 +35,21 @@ export function loadPreferences() {
 }
 
 export function savePreferences(preferences) {
-  localStorage.setItem(PREFERENCE_KEY, JSON.stringify(preferences));
-  return preferences;
+  try {
+    localStorage.setItem(PREFERENCE_KEY, JSON.stringify(preferences));
+    return { ok: true, preferences };
+  } catch {
+    return { ok: false, preferences };
+  }
 }
 
 export function updatePreferences(mutator) {
+  const preferences = loadPreferences();
+  mutator(preferences);
+  return savePreferences(preferences).preferences;
+}
+
+export function tryUpdatePreferences(mutator) {
   const preferences = loadPreferences();
   mutator(preferences);
   return savePreferences(preferences);

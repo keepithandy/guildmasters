@@ -15,7 +15,8 @@
     "smoke:qol": "node smoke_guildmasters_qol.mjs",
     "smoke:hotfix": "node tests/smoke/smoke_system_hotfix.mjs",
     "smoke:quality": "node tests/smoke/smoke_code_quality.mjs",
-    "smoke:all": "node smoke_guildmasters_v01.mjs && node smoke_guildmasters_v10.mjs && node smoke_guildmasters_v11.mjs && node smoke_guildmasters_v12.mjs && node smoke_guildmasters_v13.mjs && node smoke_guildmasters_roadmap.mjs && node smoke_guildmasters_navigation.mjs && node smoke_guildmasters_qol.mjs && node tests/smoke/smoke_system_hotfix.mjs && node tests/smoke/smoke_code_quality.mjs",
+    "smoke:qol-actions": "node tests/smoke/smoke_qol_actions.mjs",
+    "smoke:all": "node smoke_guildmasters_v01.mjs && node smoke_guildmasters_v10.mjs && node smoke_guildmasters_v11.mjs && node smoke_guildmasters_v12.mjs && node smoke_guildmasters_v13.mjs && node smoke_guildmasters_roadmap.mjs && node smoke_guildmasters_navigation.mjs && node smoke_guildmasters_qol.mjs && node tests/smoke/smoke_system_hotfix.mjs && node tests/smoke/smoke_code_quality.mjs && node tests/smoke/smoke_qol_actions.mjs",
     "check": "npm run smoke:all",
     "report:progression": "node scripts/progression-report.mjs"
   }

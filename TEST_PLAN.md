@@ -21,6 +21,8 @@ npm run smoke:quality
 
 The regression coverage verifies that clean background polling does not rewrite storage or rerender the dashboard, completed contracts still persist when resolved in the background, visibility loss and pagehide flush pending state, and failed writes remain eligible for retry. Save schema `5` remains unchanged.
 
+Run `npm run smoke:qol-actions` after changing save transfer, party selection, activity categories, or keyboard shortcuts. It covers malformed/future import rejection, repaired party selection, deterministic recommendations, low-value activity deduplication, and input-field shortcut guards.
+
 Manual browser checks:
 
 1. Start a contract, switch the tab away, return after its deadline, and confirm the completion is reflected and survives reload.
