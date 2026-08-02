@@ -954,6 +954,12 @@ select {
 .shortcut-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: rgb(25 20 13 / 0.62); }
 .shortcut-overlay > div { width: min(32rem, 100%); padding: 1rem; border-radius: 0.75rem; background: var(--panel, #fffaf0); box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.3); }
 .shortcut-overlay kbd { padding: 0.1rem 0.35rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+.tutorial-overlay { position: fixed; inset: 0; z-index: 200; background: rgb(18 14 9 / 0.72); }
+.tutorial-card { position: fixed; z-index: 202; right: clamp(1rem, 4vw, 3rem); bottom: clamp(1rem, 5vh, 3rem); width: min(30rem, calc(100vw - 2rem)); padding: 1.1rem; border: 2px solid var(--accent, #926f2f); border-radius: 0.85rem; background: var(--panel, #fffaf0); box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.38); }
+.tutorial-card h2 { margin-top: 0.2rem; }
+.tutorial-progress { height: 0.4rem; margin: 1rem 0; overflow: hidden; border-radius: 999px; background: var(--border, #d7c6a7); }
+.tutorial-progress span { display: block; height: 100%; background: var(--accent, #926f2f); }
+.tutorial-target { position: relative; z-index: 201 !important; scroll-margin-top: 7rem; outline: 4px solid var(--accent, #926f2f); outline-offset: 5px; box-shadow: 0 0 0 9999px rgb(18 14 9 / 0.08); pointer-events: none; }
 .mobile-action-tray { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -964,6 +970,7 @@ select {
   #app { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
   .mobile-action-tray { position: fixed; z-index: 20; right: 0.75rem; bottom: calc(0.5rem + env(safe-area-inset-bottom)); left: 0.75rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; padding: 0.5rem; border: 1px solid var(--border, #d7c6a7); border-radius: 0.75rem; background: var(--panel, #fffaf0); box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.18); }
   .command-bar-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tutorial-card { right: 0.75rem; bottom: calc(0.75rem + env(safe-area-inset-bottom)); left: 0.75rem; width: auto; max-height: min(50vh, 26rem); overflow: auto; }
 }
 
 .text-action {

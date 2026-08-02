@@ -13,9 +13,11 @@ import { recommendedParty, repairPartySelection } from './partySelection.js';
 import { applyImportedSave, downloadPortableSave, exportPortableSave, prepareImportedSave } from './saveTransfer.js';
 import { initKeyboardShortcuts } from './keyboardShortcuts.js';
 import { prepareBulkTraining } from './bulkRoster.js';
+import { TUTORIAL_VERSION, createTutorialState, isLastTutorialStep, moveTutorial, shouldAutoStartTutorial } from './tutorial.js';
 
 let state = loadGame();
-const uiState = { saveStatus: 'Saved', shortcutHelpOpen: false, pendingImport: null, undoPreferences: null };
+const initialPreferences = loadPreferences();
+const uiState = { saveStatus: 'Saved', shortcutHelpOpen: false, pendingImport: null, undoPreferences: null, tutorial: shouldAutoStartTutorial(initialPreferences) ? createTutorialState() : { active: false, index: 0 } };
 const previousLastSeen = state.lastSeenAt;
 const activeContractsBeforeLoad = state.activeContracts.length;
 state = bootstrapFoundation(state);
@@ -117,6 +119,14 @@ const actions = {
     else render(state, actions);
   },
   toggleShortcutHelp() { uiState.shortcutHelpOpen = !uiState.shortcutHelpOpen; render(state, actions); },
+  startTutorial() { uiState.shortcutHelpOpen = false; uiState.pendingImport = null; uiState.tutorial = createTutorialState(); render(state, actions); },
+  previousTutorialStep() { uiState.tutorial = moveTutorial(uiState.tutorial, -1); render(state, actions); },
+  nextTutorialStep() {
+    if (isLastTutorialStep(uiState.tutorial)) return finishTutorial();
+    uiState.tutorial = moveTutorial(uiState.tutorial, 1);
+    render(state, actions);
+  },
+  skipTutorial() { finishTutorial(); },
   focusContracts() {
     const target = document.getElementById('contract-board');
     if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); target.focus({ preventScroll: true }); }
@@ -178,6 +188,13 @@ function selectedParty() {
 
 function showUiFailure(reason) {
   reportAction(state, reason, Date.now(), false);
+  render(state, actions);
+}
+
+function finishTutorial() {
+  const result = tryUpdatePreferences(preferences => { preferences.tutorialVersion = TUTORIAL_VERSION; });
+  uiState.tutorial = { active: false, index: 0 };
+  if (!result.ok) reportAction(state, 'Tutorial finished, but this browser could not remember that choice.', Date.now(), false);
   render(state, actions);
 }
 

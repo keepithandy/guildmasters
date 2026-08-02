@@ -12,6 +12,7 @@ const DEFAULT_PREFERENCES = {
   queueSort: 'remaining',
   activityFilter: 'all',
   partyHeroIds: [],
+  tutorialVersion: 0,
   notificationsReadAt: 0,
   density: 'comfortable'
 };

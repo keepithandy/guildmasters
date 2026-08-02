@@ -6,6 +6,7 @@ Hotfix status: unreleased
 
 ## Unreleased hotfix
 
+- Added a versioned first-run guided tour covering all permanent dashboard systems without changing gameplay state or save schema.
 - Added save confidence/retry, validated portable import/export, and local UI QoL controls without changing save schema `5`.
 - Added party-builder persistence and repair, activity filters, keyboard help, reduced-motion handling, and compact mobile quick actions.
 - Replaced unconditional background save and render calls with dirty-state persistence.

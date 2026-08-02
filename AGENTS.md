@@ -12,6 +12,7 @@ Guildmasters is a browser-based game using native ES modules. Keep gameplay stat
 - Treat save loading and saving as untrusted boundaries: malformed data or browser storage failures must not crash the game.
 - Treat imported save files as untrusted: parse, repair, and validate them before replacement, then keep the current state if persistence fails.
 - Keep background persistence dirty-state based; flush pending changes on page visibility loss and pagehide without adding unconditional storage-write loops.
+- Keep guided-tour completion in versioned UI preferences, target stable permanent section IDs, and never mutate gameplay merely to demonstrate a feature.
 - Keep `src/systems.js` and `src/gameState.js` as stable compatibility entrypoints; place new implementation in their focused submodules.
 - Use canonical domain operations for actions triggered from multiple surfaces, including direct UI actions and guild events.
 - Preserve transactional behavior: validate affordability and capacity before mutating resources or resolving an event.

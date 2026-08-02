@@ -4,6 +4,7 @@ import { canRecruitHero, heroTotalPower, RECRUIT_COST, recruitPowerBonus, recrui
 import { ACHIEVEMENT_CATALOG, BOSS_ENCOUNTERS, CAMPAIGN_CHAPTERS, COMBAT_ENCOUNTERS, EVENT_CATALOG, GAME_MODES, ITEM_CATALOG, REGION_CATALOG, RESEARCH_CATALOG, RIVAL_GUILDS, ROOM_CATALOG, STAFF_CATALOG, STORY_DECISIONS, catalogChapter, catalogEvent, catalogItem } from './content.js';
 import { loadPreferences, updatePreferences } from './preferences.js';
 import { partyUnavailableReason, repairPartySelection } from './partySelection.js';
+import { TUTORIAL_STEPS, currentTutorialStep, isLastTutorialStep, syncTutorialTarget } from './tutorial.js';
 
 let notificationsOpen = false;
 let completionTicker = null;
@@ -44,11 +45,14 @@ export function render(state, actions) {
     ${renderMobileTray()}
     ${renderShortcutHelp(uiState)}
     ${renderImportDialog(uiState)}
+    ${renderTutorial(uiState)}
     <input id="saveImportInput" type="file" accept="application/json,.json" hidden>
   `;
   bindActions(root, actions);
   decorateDashboard(root, actions, preferences);
   refreshCompletionTimers(root);
+  syncTutorialTarget(root, uiState.tutorial, window);
+  if (uiState.tutorial?.active) queueMicrotask(() => root.querySelector('[data-tutorial-primary]')?.focus());
 }
 
 function renderCommandBar(state, preferences, uiState) {
@@ -57,7 +61,7 @@ function renderCommandBar(state, preferences, uiState) {
   return `<section id="command-bar" class="command-bar" data-density="${escapeHtml(preferences.density)}" aria-label="Guild at a glance">
     <div class="command-bar-heading"><p class="eyebrow">At a glance</p><strong>Day ${state.guild.day}</strong><span>${state.heroes.filter(hero => hero.status === 'idle').length} idle heroes • ${state.activeContracts.length} expeditions away</span></div>
     <div class="command-resources" aria-label="Guild resources"><span>Gold<strong>${state.guild.gold}</strong></span><span>Rep<strong>${state.guild.reputation}</strong></span><span>Materials<strong>${state.guild.materials}</strong></span><span>Influence<strong>${state.guild.influence}</strong></span></div>
-    <div class="command-bar-actions"><button data-action="advanceDay">Begin Day ${state.guild.day + 1}</button><button data-action="saveGame" class="secondary-action" title="Alt+S">Save</button><span class="save-indicator ${saveStatusClass(uiState.saveStatus)}" role="status" aria-live="polite">${escapeHtml(uiState.saveStatus || 'Saved')}</span><button data-ui-action="exportSave" class="text-action">Export</button><button data-ui-action="openImport" class="text-action">Import</button><button data-ui-action="toggleShortcutHelp" class="text-action" title="?">Shortcuts</button><button data-ui-action="toggleNotifications" class="notification-trigger secondary-action" aria-expanded="${notificationsOpen}" aria-controls="notificationCenter">Alerts <span class="notification-count ${unreadCount ? 'has-unread' : ''}">${unreadCount}</span></button><label class="density-control">View<select data-ui-control="density" aria-label="Display density"><option value="comfortable" ${preferences.density === 'comfortable' ? 'selected' : ''}>Comfortable</option><option value="compact" ${preferences.density === 'compact' ? 'selected' : ''}>Compact</option></select></label></div>
+    <div class="command-bar-actions"><button data-action="advanceDay">Begin Day ${state.guild.day + 1}</button><button data-action="saveGame" class="secondary-action" title="Alt+S">Save</button><span class="save-indicator ${saveStatusClass(uiState.saveStatus)}" role="status" aria-live="polite">${escapeHtml(uiState.saveStatus || 'Saved')}</span><button data-ui-action="exportSave" class="text-action">Export</button><button data-ui-action="openImport" class="text-action">Import</button><button data-ui-action="startTutorial" class="text-action">Tutorial</button><button data-ui-action="toggleShortcutHelp" class="text-action" title="?">Shortcuts</button><button data-ui-action="toggleNotifications" class="notification-trigger secondary-action" aria-expanded="${notificationsOpen}" aria-controls="notificationCenter">Alerts <span class="notification-count ${unreadCount ? 'has-unread' : ''}">${unreadCount}</span></button><label class="density-control">View<select data-ui-control="density" aria-label="Display density"><option value="comfortable" ${preferences.density === 'comfortable' ? 'selected' : ''}>Comfortable</option><option value="compact" ${preferences.density === 'compact' ? 'selected' : ''}>Compact</option></select></label></div>
     <div id="notificationCenter" class="notification-center" ${notificationsOpen ? '' : 'hidden'}><div class="notification-heading"><strong>Recent activity</strong><button data-ui-action="markNotificationsRead" class="text-action">Mark read</button></div>${recentEntries.length ? `<ul>${recentEntries.map(entry => `<li><span>${escapeHtml(entry.message)}</span><small>${formatRelativeTime(entry.timestamp)}</small></li>`).join('')}</ul>` : '<p class="empty-copy">No activity yet.</p>'}<button data-ui-action="openLog" class="text-action">Open Guild Log</button></div>
   </section>`;
 }
@@ -283,6 +287,10 @@ function bindUiActions(root, actions) {
     else if (action === 'confirmImport') return actions.confirmImport();
     else if (action === 'cancelImport') return actions.cancelImport();
     else if (action === 'toggleShortcutHelp') return actions.toggleShortcutHelp();
+    else if (action === 'startTutorial') return actions.startTutorial();
+    else if (action === 'previousTutorialStep') return actions.previousTutorialStep();
+    else if (action === 'nextTutorialStep') return actions.nextTutorialStep();
+    else if (action === 'skipTutorial') return actions.skipTutorial();
     else if (action === 'focusContracts') return actions.focusContracts();
     else if (action === 'undoPreference') return actions.undoPreference();
     else if (action === 'selectIdleParty') return actions.selectIdleParty();
@@ -309,6 +317,15 @@ function bindUiActions(root, actions) {
     reader.onload = () => actions.importSave(reader.result);
     reader.onerror = () => actions.importSave('');
     reader.readAsText(file);
+  });
+
+  const tutorial = root.querySelector('#tutorialOverlay');
+  tutorial?.addEventListener('keydown', event => {
+    event.stopPropagation();
+    if (event.key === 'Escape') { event.preventDefault(); actions.skipTutorial(); }
+    else if (event.key === 'ArrowRight') { event.preventDefault(); actions.nextTutorialStep(); }
+    else if (event.key === 'ArrowLeft') { event.preventDefault(); actions.previousTutorialStep(); }
+    else if (event.key === 'Tab') keepTutorialFocus(tutorial, event);
   });
 }
 
@@ -470,6 +487,21 @@ function selectedParty(state) { return repairPartySelection(loadPreferences().pa
 function renderMobileTray() { return `<nav class="mobile-action-tray" aria-label="Quick actions"><button data-action="saveGame">Save</button><button data-ui-action="focusContracts">Contracts</button><button data-action="recruitHero">Recruit</button></nav>`; }
 function renderShortcutHelp(uiState) { return uiState.shortcutHelpOpen ? `<section class="shortcut-overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts"><div><h2>Keyboard shortcuts</h2><p><kbd>Alt</kbd>+<kbd>S</kbd> Save</p><p><kbd>Alt</kbd>+<kbd>R</kbd> Recruit</p><p><kbd>Alt</kbd>+<kbd>C</kbd> Contract board</p><p><kbd>?</kbd> Close this help</p><button data-ui-action="toggleShortcutHelp">Close</button></div></section>` : ''; }
 function renderImportDialog(uiState) { return uiState.pendingImport ? `<section class="shortcut-overlay" role="dialog" aria-modal="true" aria-label="Confirm imported save"><div><h2>Replace current guild?</h2><p>${escapeHtml(uiState.pendingImport.summary)}</p><p>The imported save was repaired and validated. Confirming replaces the current guild only after browser storage accepts it.</p><button data-ui-action="confirmImport" class="danger">Replace current guild</button><button data-ui-action="cancelImport" class="secondary-action">Cancel</button></div></section>` : ''; }
+function renderTutorial(uiState) {
+  const tutorial = uiState.tutorial;
+  const current = currentTutorialStep(tutorial);
+  if (!current) return '';
+  const finalStep = isLastTutorialStep(tutorial);
+  return `<section id="tutorialOverlay" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="tutorial-step-title" aria-describedby="tutorial-step-description"><div class="tutorial-card"><p class="eyebrow">Guided tour • ${tutorial.index + 1}/${TUTORIAL_STEPS.length}</p><h2 id="tutorial-step-title">${escapeHtml(current.title)}</h2><p id="tutorial-step-description">${escapeHtml(current.description)}</p><div class="tutorial-progress" aria-hidden="true"><span style="width:${((tutorial.index + 1) / TUTORIAL_STEPS.length) * 100}%"></span></div><div class="button-row"><button data-ui-action="previousTutorialStep" ${tutorial.index === 0 ? 'disabled' : ''}>Back</button><button data-ui-action="nextTutorialStep" data-tutorial-primary>${finalStep ? 'Finish tour' : 'Next'}</button><button data-ui-action="skipTutorial" class="text-action">Skip tour</button></div><p class="mini-record">Use Left/Right Arrow to move and Escape to skip.</p></div></section>`;
+}
+function keepTutorialFocus(tutorial, event) {
+  const controls = [...tutorial.querySelectorAll('button:not([disabled])')];
+  if (!controls.length) return;
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
 function refreshCompletionTimers(root) {
   const update = () => root.querySelectorAll('[data-completes-at]').forEach(card => {
     const completesAt = Number(card.dataset.completesAt);

@@ -23,6 +23,8 @@ The regression coverage verifies that clean background polling does not rewrite 
 
 Run `npm run smoke:qol-actions` after changing save transfer, party selection, activity categories, or keyboard shortcuts. It covers malformed/future import rejection, repaired party selection, deterministic recommendations, low-value activity deduplication, and input-field shortcut guards.
 
+Run `npm run smoke:tutorial` after changing permanent section IDs, tutorial steps, UI preferences, or guided navigation. It verifies first-run behavior, one-time completion versioning, complete target coverage, navigation bounds, collapsed-panel expansion, highlighting, restart/skip controls, and reduced-motion scrolling.
+
 Manual browser checks:
 
 1. Start a contract, switch the tab away, return after its deadline, and confirm the completion is reflected and survives reload.
