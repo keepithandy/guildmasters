@@ -105,6 +105,10 @@ GitHub Actions runs the same smoke and report commands on pull requests and `mai
 
 The progression report prints the current recruit cost and contract table, and flags unreachable, non-positive, or obvious reward/cost discontinuities. It is read-only analysis and does not claim automatic balance correctness.
 
+## Save and keyboard QoL
+
+The command bar shows saving, saved, or save-failed status; a failed write exposes a retry action. Export creates a portable JSON save. Import repairs and validates the selected file, shows a summary, and only replaces the guild after browser storage accepts it. `Alt+S` saves, `Alt+R` recruits, `Alt+C` jumps to contracts, and `?` opens the shortcut help; shortcuts are disabled while typing.
+
 ## Manual viewport and accessibility checklist
 
 - Check 320px, 375px, and 430px widths without horizontal scrolling.

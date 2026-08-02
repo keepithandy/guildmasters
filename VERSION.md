@@ -6,6 +6,8 @@ Hotfix status: unreleased
 
 ## Unreleased hotfix
 
+- Added save confidence/retry, validated portable import/export, and local UI QoL controls without changing save schema `5`.
+- Added party-builder persistence and repair, activity filters, keyboard help, reduced-motion handling, and compact mobile quick actions.
 - Replaced unconditional background save and render calls with dirty-state persistence.
 - Flushes pending changes on browser visibility loss and pagehide, with retry-safe handling for failed writes.
 - Preserves save-state schema `5`.

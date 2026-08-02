@@ -943,6 +943,29 @@ select {
   font-size: 0.62rem;
 }
 
+.save-indicator { align-self: center; font-size: 0.82rem; white-space: nowrap; }
+.save-indicator.is-saved { color: var(--success, #2f7d4c); }
+.save-indicator.is-saving { color: var(--accent, #926f2f); }
+.save-indicator.is-failed { color: var(--danger, #a63d3d); font-weight: 700; }
+.qol-recovery-row { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+.party-builder { margin: 0.75rem 0; padding: 0.7rem; border: 1px solid var(--border, #d7c6a7); border-radius: 0.65rem; }
+.roster-select { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.88rem; }
+.log-category { display: inline-block; min-width: 5.8rem; margin-right: 0.4rem; color: var(--muted, #6c6253); font-size: 0.75rem; text-transform: capitalize; }
+.shortcut-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: rgb(25 20 13 / 0.62); }
+.shortcut-overlay > div { width: min(32rem, 100%); padding: 1rem; border-radius: 0.75rem; background: var(--panel, #fffaf0); box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.3); }
+.shortcut-overlay kbd { padding: 0.1rem 0.35rem; border: 1px solid currentColor; border-radius: 0.25rem; }
+.mobile-action-tray { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+
+@media (max-width: 700px) {
+  #app { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+  .mobile-action-tray { position: fixed; z-index: 20; right: 0.75rem; bottom: calc(0.5rem + env(safe-area-inset-bottom)); left: 0.75rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; padding: 0.5rem; border: 1px solid var(--border, #d7c6a7); border-radius: 0.75rem; background: var(--panel, #fffaf0); box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.18); }
+  .command-bar-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .text-action {
   border: 0;
   font-size: 0.68rem;
