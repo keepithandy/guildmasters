@@ -2,6 +2,7 @@ const PREFERENCE_KEY = 'guildmasters.ui.preferences.v1';
 
 const DEFAULT_PREFERENCES = {
   collapsedPanels: [],
+  collapsedPanelsInitialized: false,
   pinnedPanels: [],
   navGroups: {},
   heroFilter: 'all',

@@ -1,6 +1,6 @@
 {
   "name": "guildmasters",
-  "version": "2.0.0-rc.4",
+  "version": "2.0.0-rc.5",
   "private": true,
   "type": "module",
   "description": "Fantasy guild-management strategy game with a complete 22-phase release-candidate foundation.",

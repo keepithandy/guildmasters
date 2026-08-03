@@ -85,6 +85,11 @@ button.danger {
 }
 
 header {
+  background: linear-gradient(135deg, rgba(48, 36, 23, 0.78), rgba(21, 17, 13, 0.2));
+  border: 1px solid rgba(215, 168, 79, 0.28);
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+  margin-bottom: 0.55rem;
   padding: 0.65rem 0 0.35rem;
 }
 
@@ -105,6 +110,8 @@ p {
 }
 
 h1 {
+  color: #fff4dc;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(2rem, 10vw, 2.55rem);
   letter-spacing: -0.065em;
   line-height: 0.9;
@@ -140,7 +147,17 @@ p {
 }
 
 .panel {
+  position: relative;
   padding: 0.55rem;
+}
+
+.panel.is-collapsed {
+  background: linear-gradient(135deg, rgba(48, 36, 23, 0.92), rgba(31, 25, 18, 0.92));
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.16);
+}
+
+.panel.is-collapsed .panel-title-row {
+  min-height: 2rem;
 }
 
 .card {

@@ -331,6 +331,7 @@ function bindUiActions(root, actions) {
 
 function decorateDashboard(root, actions, preferences) {
   const panels = [...root.querySelectorAll('.panel[id]')];
+  const firstVisit = preferences.collapsedPanelsInitialized !== true;
   panels.forEach(panel => {
     const titleRow = [...panel.children].find(child => child.classList.contains('panel-title-row'));
     if (!titleRow) return;
@@ -342,7 +343,7 @@ function decorateDashboard(root, actions, preferences) {
       panel.append(body);
     }
 
-    const collapsed = preferences.collapsedPanels.includes(panel.id);
+    const collapsed = firstVisit || preferences.collapsedPanels.includes(panel.id);
     const pinned = preferences.pinnedPanels.includes(panel.id);
     panel.classList.toggle('is-collapsed', collapsed);
     panel.classList.toggle('is-pinned', pinned);
@@ -380,6 +381,8 @@ function decorateDashboard(root, actions, preferences) {
       collapseButton.textContent = nextCollapsed ? '＋' : '−';
     });
   });
+
+  if (firstVisit) updatePreferences(current => { current.collapsedPanelsInitialized = true; });
 
   root.querySelectorAll('[data-ui-panel-action]').forEach(control => {
     if (control.dataset.uiPanelBound === 'true') return;

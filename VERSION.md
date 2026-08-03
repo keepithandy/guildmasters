@@ -1,6 +1,6 @@
 # Version
 
-Current version: v2.0.0-rc.4
+Current version: v2.0.0-rc.5
 
 Hotfix status: unreleased
 

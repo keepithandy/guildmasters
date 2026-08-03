@@ -2,6 +2,8 @@
 
 ## Unreleased hotfix
 
+- Start the dashboard with all sections collapsed and give the landing header a more polished visual treatment.
+
 - Added a first-run guided tutorial that automatically navigates and highlights every permanent game area, with Back, Next, Skip, keyboard controls, reduced-motion support, and a command-bar restart action.
 - Added save confidence states, retryable failed saves, portable save export/import with repair-and-validation before replacement, and lifecycle-safe persistence.
 - Added deterministic remembered party selection, party repair, recommended/clear/select-idle controls, roster multi-select with atomic bulk training, and unavailable-member explanations.
