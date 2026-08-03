@@ -29,6 +29,7 @@ assert.deepEqual(groupControls, [
 groupControls.forEach(id => assert.match(index, new RegExp(`id="${id}"`), `${id} submenu exists`));
 
 assert.match(index, /id="quickNavToggle"[\s\S]*?aria-expanded="false"/, 'mobile quick-menu button begins collapsed');
+assert.equal((index.match(/class="quick-nav-group-toggle"[\s\S]*?aria-expanded="true"/g) || []).length, 0, 'all quick-menu groups begin collapsed');
 assert.match(index, /id="quickNav" class="quick-nav" aria-label="Quick access"/, 'sidebar has an accessible landmark');
 assert.match(index, /id="quickNavClose"[\s\S]*?aria-label="Close quick menu"/, 'drawer exposes an accessible close action');
 assert.match(main, /initQuickNavigation\(\)/, 'browser startup initializes quick navigation');

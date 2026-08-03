@@ -5,7 +5,11 @@ import { validateGameState } from './invariants.js';
 export function exportPortableSave(state) {
   const errors = validateGameState(state);
   if (errors.length) return createActionResult(false, `Export blocked: ${errors[0]}`, { errors });
-  return createActionResult(true, 'Portable guild save prepared.', { text: JSON.stringify(state, null, 2) });
+  try {
+    return createActionResult(true, 'Portable guild save prepared.', { text: JSON.stringify(state, null, 2) });
+  } catch {
+    return createActionResult(false, 'Export blocked: the current guild data could not be serialized.');
+  }
 }
 
 export function prepareImportedSave(text, now = Date.now()) {
@@ -45,7 +49,12 @@ export function downloadPortableSave(text, filename = 'guildmasters-save.json') 
 
 export function applyImportedSave(currentState, prepared, persist) {
   if (!prepared?.ok || !prepared.state) return createActionResult(false, 'Import was not ready for confirmation.', { state: currentState });
-  const result = persist(prepared.state);
+  let result;
+  try {
+    result = persist(prepared.state);
+  } catch {
+    return createActionResult(false, 'Import was not applied: storage rejected the save.', { state: currentState });
+  }
   if (!result?.ok) return createActionResult(false, `Import was not applied: ${result?.reason || 'storage rejected the save.'}`, { state: currentState });
   return createActionResult(true, 'Imported save applied.', { state: prepared.state });
 }

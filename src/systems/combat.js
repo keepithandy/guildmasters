@@ -9,8 +9,9 @@ export function enemyWeakness(enemyId) {
 
 export function challengeBoss(state, bossId, heroIds = [], now = Date.now()) {
   const boss = catalogBoss(bossId);
-  const party = heroIds.map(heroId => findHero(state, heroId)).filter(Boolean).filter(hero => hero.status === 'idle');
+  const party = availableParty(state, heroIds);
   if (!boss) return reportAction(state, 'That boss expedition could not be found.', now, false);
+  if (state.bosses.defeated.includes(boss.id)) return reportAction(state, `${boss.name} has already been defeated.`, now, false);
   if (state.guild.level < boss.requiredGuildLevel || state.guild.reputation < boss.requiredReputation) return reportAction(state, `${boss.name} requires guild level ${boss.requiredGuildLevel} and ${boss.requiredReputation} reputation.`, now, false);
   if (!state.regions.unlocked.includes(boss.region)) return reportAction(state, `${boss.name} is beyond the ${boss.region.replaceAll('-', ' ')} region.`, now, false);
   if (!party.length) return reportAction(state, 'Choose at least one idle hero for the boss expedition.', now, false);
@@ -66,7 +67,7 @@ export function runTacticalDrill(state, drillId, heroIds = [], now = Date.now())
 
 export function runCombatEncounter(state, encounterId, heroIds = [], now = Date.now()) {
   const encounter = catalogEncounter(encounterId);
-  const party = heroIds.map(heroId => findHero(state, heroId)).filter(Boolean).filter(hero => hero.status === 'idle');
+  const party = availableParty(state, heroIds);
   if (!encounter) return reportAction(state, 'That tactical encounter could not be found.', now, false);
   if (!party.length) return reportAction(state, 'Choose at least one idle hero for the tactical drill.', now, false);
   const weaknessClass = enemyWeakness(encounter.enemy);
@@ -128,4 +129,9 @@ export function runCombatEncounter(state, encounterId, heroIds = [], now = Date.
     hero.statusEffects = [];
   });
   return reportAction(state, `${encounter.name} lost after ${rounds} rounds. Study the enemy weakness and improve the party before trying again.`, now, false);
+}
+
+function availableParty(state, heroIds) {
+  const uniqueHeroIds = [...new Set(Array.isArray(heroIds) ? heroIds.filter(id => typeof id === 'string') : [])];
+  return uniqueHeroIds.map(heroId => findHero(state, heroId)).filter(hero => hero?.status === 'idle');
 }

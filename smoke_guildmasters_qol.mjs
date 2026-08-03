@@ -8,7 +8,7 @@ const main = read('src/main.js');
 const styles = read('styles.css');
 const packageJson = JSON.parse(read('package.json'));
 
-assert.equal(packageJson.version, '2.0.0-rc.4', 'QoL and hotfix pass is versioned as the next release candidate');
+assert.equal(packageJson.version, '2.0.0-rc.5', 'QoL and hotfix pass is versioned as the current release candidate');
 assert.match(preferences, /guildmasters\.ui\.preferences\.v1/, 'QoL preferences use a separate versioned browser record');
 for (const key of ['collapsedPanels', 'pinnedPanels', 'navGroups', 'heroFilter', 'heroSort', 'contractFilter', 'contractSort', 'queueFilter', 'queueSort', 'activityFilter', 'partyHeroIds', 'tutorialVersion', 'notificationsReadAt', 'density']) {
   assert.match(preferences, new RegExp(key), `preferences preserve ${key}`);

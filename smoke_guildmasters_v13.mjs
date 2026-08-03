@@ -18,6 +18,13 @@ assert.equal(state.combat.lastEncounter.result, 'victory', 'boss victory stores 
 assert.ok(state.combat.lastEncounter.transcript.some(line => line.includes('Worldfire')), 'boss transcript names unique phase mechanics');
 assert.ok(state.achievements.includes('boss-slayer'), 'boss victories award the boss achievement');
 
+const bossRewards = { gold: state.guild.gold, records: state.guild.records.bossesDefeated, attempts: state.bosses.attempts['dragon-below'] };
+state = challengeBoss(state, 'dragon-below', ['ranger', 'guardian'], 1150);
+assert.equal(state.lastAction.ok, false, 'defeated bosses cannot be challenged for repeat rewards');
+assert.equal(state.guild.gold, bossRewards.gold, 'repeat boss attempts do not award gold');
+assert.equal(state.guild.records.bossesDefeated, bossRewards.records, 'repeat boss attempts do not inflate boss records');
+assert.equal(state.bosses.attempts['dragon-below'], bossRewards.attempts, 'repeat boss attempts do not increment attempts');
+
 state.campaign.chaptersCompleted.push('frontier-trouble');
 state = makeStoryChoice(state, 'frontier-alliance', 'rangers', 1200);
 assert.ok(state.campaign.decisionsMade.includes('frontier-alliance'), 'story choices are recorded');
@@ -34,4 +41,4 @@ assert.deepEqual(repaired.bosses, state.bosses, 'save repair preserves boss reco
 assert.deepEqual(repaired.campaign, state.campaign, 'save repair preserves story decisions');
 assert.deepEqual(repaired.rivals, state.rivals, 'save repair preserves rival behavior state');
 assert.equal(repaired.worldThreat, state.worldThreat, 'save repair preserves world threat');
-console.log('Guildmasters v1.3 boss, story, and rival-depth smoke passed.');
+console.log('GuildMasters v1.3 boss, story, and rival-depth smoke passed.');

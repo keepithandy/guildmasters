@@ -98,9 +98,15 @@ export function setMode(state, modeId, now = Date.now()) {
 }
 
 export function bootstrapFoundation(state, now = Date.now()) {
-  if (!state.inventory.length) addInventory(state, 'iron-sword', 1, now);
-  if (!state.inventory.some(item => item.itemId === 'hunter-bow')) addInventory(state, 'hunter-bow', 1, now);
+  for (const itemId of ['iron-sword', 'hunter-bow']) {
+    if (!guildOwnsItem(state, itemId)) addInventory(state, itemId, 1, now);
+  }
   return state;
+}
+
+function guildOwnsItem(state, itemId) {
+  return state.inventory.some(item => item.itemId === itemId)
+    || state.heroes.some(hero => Object.values(hero.equipment || {}).includes(itemId));
 }
 
 export function recordOfflineReturn(state, previousLastSeen, activeBefore, now = Date.now()) {

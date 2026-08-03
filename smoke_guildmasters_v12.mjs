@@ -15,6 +15,11 @@ assert.ok(state.combat.lastEncounter.transcript.length > 0, 'combat stores a rea
 assert.ok(state.achievements.includes('first-blood'), 'first victory awards an achievement');
 assert.equal(state.heroes.every(hero => hero.statusEffects.length === 0), true, 'temporary combat effects clear after victory');
 
+const duplicatePartyState = createNewGameState(1150);
+duplicatePartyState.heroes.push({ id: 'solo-mage', name: 'Mira', className: 'Mage', level: 1, power: 1, status: 'idle', morale: 75, traits: [], skills: [], equipment: {}, injuries: [], statusEffects: [], relationships: {} });
+runCombatEncounter(duplicatePartyState, 'goblin-skirmish', ['solo-mage', 'solo-mage'], 1160);
+assert.equal(duplicatePartyState.combat.lastEncounter.result, 'defeat', 'duplicate party selections do not inflate tactical combat power');
+
 state = bondHeroes(state, 'warrior', 'mage', 1200);
 assert.ok(state.heroes[0].relationships.mage > 0, 'hero bonds increase relationship strength');
 assert.equal(state.relationshipEvents.length, 1, 'relationship moments are recorded');
@@ -25,4 +30,4 @@ assert.deepEqual(repaired.combat, state.combat, 'save repair preserves combat hi
 assert.deepEqual(repaired.achievements, state.achievements, 'save repair preserves achievements');
 assert.deepEqual(repaired.relationshipEvents, state.relationshipEvents, 'save repair preserves relationship moments');
 assert.equal(repaired.heroes[0].relationships.mage, state.heroes[0].relationships.mage, 'save repair preserves hero bonds');
-console.log('Guildmasters v1.2 combat, relationships, and achievements smoke passed.');
+console.log('GuildMasters v1.2 combat, relationships, and achievements smoke passed.');

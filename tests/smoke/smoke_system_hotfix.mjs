@@ -4,10 +4,19 @@ import { createNewGameState } from '../../src/gameState.js';
 import { HERO_CLASS_NAMES } from '../../src/heroes.js';
 import { validateGameState } from '../../src/invariants.js';
 import { loadGame, resetGame, saveGame } from '../../src/saveSystem.js';
-import { chooseEvent } from '../../src/systems.js';
+import { bootstrapFoundation, chooseEvent } from '../../src/systems.js';
 import { enemyWeakness } from '../../src/systems/combat.js';
 
 const wanderingEvent = { id: 'event-test', eventId: 'wandering-hero', createdDay: 2 };
+
+const starterGearState = createNewGameState(900);
+starterGearState.heroes.push(
+  { equipment: { weapon: 'iron-sword' } },
+  { equipment: { weapon: 'hunter-bow' } }
+);
+bootstrapFoundation(starterGearState, 950);
+assert.equal(starterGearState.inventory.some(item => item.itemId === 'iron-sword'), false, 'equipped starter sword is not granted again on bootstrap');
+assert.equal(starterGearState.inventory.some(item => item.itemId === 'hunter-bow'), false, 'equipped starter bow is not granted again on bootstrap');
 
 let state = createNewGameState(1000);
 state.events.push(wanderingEvent);
