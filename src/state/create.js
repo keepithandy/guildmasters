@@ -1,4 +1,4 @@
-export const GAME_VERSION = '2.0.0-rc.4';
+export const GAME_VERSION = '2.0.0-rc.5';
 export const SAVE_SCHEMA_VERSION = 5;
 
 export function createNewGameState(now = Date.now()) {
@@ -6,7 +6,7 @@ export function createNewGameState(now = Date.now()) {
     saveVersion: SAVE_SCHEMA_VERSION,
     version: GAME_VERSION,
     guild: {
-      name: 'Guildmasters', identity: 'Independent', mode: 'story', level: 1, gold: 100, reputation: 0, heroCapacity: 3,
+      name: 'GuildMasters', identity: 'Independent', mode: 'story', level: 1, gold: 100, reputation: 0, heroCapacity: 3,
       totalGoldEarned: 0, contractsCompleted: 0, contractsFailed: 0, day: 1, influence: 0, researchPoints: 0, materials: 0, prestige: 0,
       records: { highestGuildLevel: 1, highestHeroLevel: 1, legendaryClears: 0, regionsExplored: 0, heroesRecruited: 0, itemsCrafted: 0, bossesDefeated: 0 }
     },

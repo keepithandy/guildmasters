@@ -13,7 +13,7 @@ export function prepareImportedSave(text, now = Date.now()) {
   try {
     parsed = JSON.parse(String(text || ''));
   } catch {
-    return createActionResult(false, 'Import rejected: the file is not valid Guildmasters JSON.');
+    return createActionResult(false, 'Import rejected: the file is not valid GuildMasters JSON.');
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return createActionResult(false, 'Import rejected: the save must be an object.');
   if (classifySaveVersion(parsed) === 'future') return createActionResult(false, `Import rejected: save version ${parsed.saveVersion} is newer than this build.`);

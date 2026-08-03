@@ -13,7 +13,7 @@ Hotfix status: unreleased
 - Flushes pending changes on browser visibility loss and pagehide, with retry-safe handling for failed writes.
 - Preserves save-state schema `5`.
 
-## v2.0.0-rc.4
+## v2.0.0-rc.5
 
 - Fixed the wandering-hero recruitment event so “Offer a place” recruits a generated hero instead of training the first existing hero.
 - Made event recruitment transactional with one authored cost.
@@ -27,9 +27,9 @@ Current phase: 22-phase release candidate quality-of-life verification
 
 Current target: complete manual browser QA, balance tuning, and final presentation polish before v2.0.0 final
 
-Package version: `2.0.0-rc.4`.
+Package version: `2.0.0-rc.5`.
 
-Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.4`.
+Save-state schema version: `5`. Product metadata stored in current saves is `2.0.0-rc.5`.
 
 ## v2.0.0-rc.3
 

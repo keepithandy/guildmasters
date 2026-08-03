@@ -10,7 +10,7 @@ export function loadGame(storage) {
     if (!raw) return createNewGameState();
     return repairGameState(JSON.parse(raw));
   } catch (error) {
-    console.warn('Failed to load Guildmasters save:', error);
+    console.warn('Failed to load GuildMasters save:', error);
     const state = createNewGameState();
     state.statusMessage = 'The saved guild could not be loaded; a safe new guild was created.';
     state.lastAction = createActionResult(false, state.statusMessage);
@@ -28,7 +28,7 @@ export function saveGame(state, storage, now = Date.now()) {
     return createActionResult(true, 'Guild saved safely.');
   } catch (error) {
     state.lastSeenAt = previousLastSeen;
-    console.warn('Failed to save Guildmasters state:', error);
+    console.warn('Failed to save GuildMasters state:', error);
     return createActionResult(false, 'The guild could not be saved. Check browser storage and try again.', { error });
   }
 }
@@ -38,7 +38,7 @@ export function resetGame(storage, now = Date.now()) {
     resolveStorage(storage).removeItem(SAVE_KEY);
     return createActionResult(true, 'Guild progress reset.', { state: createNewGameState(now) });
   } catch (error) {
-    console.warn('Failed to reset Guildmasters save:', error);
+    console.warn('Failed to reset GuildMasters save:', error);
     return createActionResult(false, 'Guild progress could not be reset because browser storage is unavailable.', { state: null, error });
   }
 }

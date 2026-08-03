@@ -132,7 +132,7 @@ const actions = {
     if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); target.focus({ preventScroll: true }); }
   },
   resetGame() {
-    if (!confirm('Reset Guildmasters progress?')) return;
+    if (!confirm('Reset GuildMasters progress?')) return;
     const result = resetGame();
     if (!result.ok) {
       reportAction(state, result.reason, Date.now(), false);

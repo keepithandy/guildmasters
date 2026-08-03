@@ -2,6 +2,7 @@
 
 ## Unreleased hotfix
 
+- Standardize the product name as GuildMasters and pair current user-facing version labels with v2.0.0-rc.5.
 - Start the dashboard with all sections collapsed and give the landing header a more polished visual treatment.
 
 - Added a first-run guided tutorial that automatically navigates and highlights every permanent game area, with Back, Next, Skip, keyboard controls, reduced-motion support, and a command-bar restart action.

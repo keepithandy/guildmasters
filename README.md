@@ -1,6 +1,6 @@
-# Guildmasters
+# GuildMasters
 
-Guildmasters is a browser-based fantasy guild-management strategy game focused on recruiting heroes, assigning contracts, collecting outcomes, and growing a living organization through a readable long-term loop.
+GuildMasters is a browser-based fantasy guild-management strategy game focused on recruiting heroes, assigning contracts, collecting outcomes, and growing a living organization through a readable long-term loop.
 
 ## Core loop
 
@@ -11,7 +11,7 @@ Guildmasters is a browser-based fantasy guild-management strategy game focused o
 5. Collect gold, reputation, and hero growth.
 6. Upgrade the guild and review the durable Guild Log.
 
-## v2.0.0-rc.4 Release Candidate
+## v2.0.0-rc.5 Release Candidate
 
 The release candidate wires all 22 planned phases into one playable dashboard:
 
@@ -21,7 +21,7 @@ The release candidate wires all 22 planned phases into one playable dashboard:
 - Save repair keeps the original v0.2 reliability guarantees while preserving the new systems.
 - A persistent desktop command index and mobile Quick Menu provide press-to-expand shortcuts to all permanent dashboard sections.
 - A QoL layer adds remembered panel collapse/pinning, hero and contract filters, recommended assignment actions, unlock disclosures, compact density, and a persistent activity bar.
-- The rc.4 hotfix adds transactional event recruitment, safe browser-storage recovery, focused system/state modules, invariant validation, catalog-backed combat counters, and dedicated regression coverage.
+- The rc.5 hotfix adds transactional event recruitment, safe browser-storage recovery, focused system/state modules, invariant validation, catalog-backed combat counters, dedicated regression coverage, and a polished collapsed dashboard startup.
 
 This is a functional release candidate, not a claim that every future art, audio, balance, or authored-content decision is final. The dedicated roadmap audit verifies that all 22 phases are represented, callable, save-safe, and connected to the playable loop.
 
@@ -42,7 +42,7 @@ The current build remains intentionally lightweight: expedition resolution is de
 
 ## Implemented and Playable
 
-Guildmasters now includes:
+GuildMasters now includes:
 
 - Recruitable heroes.
 - Contract assignment for idle heroes.
